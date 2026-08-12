@@ -96,6 +96,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
   uint32_t period = __HAL_TIM_GET_AUTORELOAD(&htim1);
+  uint32_t delay = 10000;
 
   /* USER CODE END 2 */
 
@@ -106,17 +107,17 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, (period * 10U) / 100U);
-    HAL_Delay(30000);
+    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, (period * 0) / 100U);
+    HAL_Delay(delay);
 
     __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, (period * 25U) / 100U);
-    HAL_Delay(30000);
+    HAL_Delay(delay);
 
     __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, (period * 75U) / 100U);
-    HAL_Delay(30000);
+    HAL_Delay(delay);
 
-    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, period);
-    HAL_Delay(30000);
+    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, (period * 100U) / 100U);
+    HAL_Delay(delay);
   }
   /* USER CODE END 3 */
 }
