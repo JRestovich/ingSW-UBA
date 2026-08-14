@@ -108,15 +108,21 @@ bool PWM_stop(pwm_t *self, pwm_channel channel)
          HAL_TIM_PWM_Stop(&self->htim, hal_channel) == HAL_OK;
 }
 
-bool PWM_setDuty(pwm_t *self, pwm_channel channel, uint32_t pulse)
+bool PWM_setDuty(pwm_t *self, pwm_channel channel, uint8_t duty_pcnt)
 {
   uint32_t hal_channel = pwm_hal_channel(channel);
 
-  if (pwm_find_channel(self, channel) == NULL || pulse > self->htim.Init.Period) {
+  if (pwm_find_channel(self, channel) == NULL) {
     return false;
   }
 
-  __HAL_TIM_SET_COMPARE(&self->htim, hal_channel, pulse);
+  if (duty_pcnt > 100) {
+    duty_pcnt = 100;
+  }
+
+  uint32_t period = __HAL_TIM_GET_AUTORELOAD(&self->htim);
+
+  __HAL_TIM_SET_COMPARE(&self->htim, hal_channel, period*duty_pcnt/100);
   return true;
 }
 

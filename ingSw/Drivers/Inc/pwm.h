@@ -45,7 +45,7 @@ bool PWM_start(pwm_t *self, pwm_channel channel);
 
 bool PWM_stop(pwm_t *self, pwm_channel channel);
 
-bool PWM_setDuty(pwm_t *self, pwm_channel channel, uint32_t pulse);
+bool PWM_setDuty(pwm_t *self, pwm_channel channel, uint8_t duty_pcnt);
 
 #ifdef __cplusplus
 }
