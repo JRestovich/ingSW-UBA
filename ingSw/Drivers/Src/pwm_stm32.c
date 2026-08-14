@@ -22,9 +22,10 @@ typedef struct struct_pwm_t
   TIM_TypeDef *timer;
   pwm_channel_t channels[PWM_MAX_CHANNELS];
   uint8_t channel_count;
+  bool valid;
 } pwm_t;
 
-static pwm_t pwms[] = {
+static pwm_t pwms[TIMER_COUNT] = {
   [TIMER1] = {
     .timer = TIM1,
     .channels = {
@@ -33,10 +34,8 @@ static pwm_t pwms[] = {
       { TIM_CHANNEL_3, GPIOA, GPIO_PIN_10, GPIO_AF1_TIM1, PWM_INITIAL_PULSE, true },
     },
     .channel_count = 3,
+    .valid = true,
   },
-   [TIMER2] = {0},
-   [TIMER3] = {0},
-   [TIMER4] = {0}
 };
 
 /* Declaraciones privadas: sus definiciones se encuentran tras la API pública. */
@@ -53,7 +52,7 @@ static uint32_t pwm_hal_channel(pwm_channel channel);
 
 pwm_t *PWM_ctor(timer_num tim)
 {
-  if (tim > TIMER4) {
+  if (tim > TIMER4 || !pwms[tim].valid) {
     return NULL;
   }
 

@@ -27,6 +27,7 @@ typedef enum {
 	TIMER2,
 	TIMER3,
 	TIMER4,
+  TIMER_COUNT
 } timer_num;
 
 typedef enum {
