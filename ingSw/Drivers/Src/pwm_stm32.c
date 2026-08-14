@@ -29,9 +29,9 @@ static pwm_t pwms[TIMER_COUNT] = {
   [TIMER1] = {
     .timer = TIM1,
     .channels = {
-      { TIM_CHANNEL_1, GPIOA, GPIO_PIN_8,  GPIO_AF1_TIM1, PWM_INITIAL_PULSE, true },
-      { TIM_CHANNEL_2, GPIOA, GPIO_PIN_9,  GPIO_AF1_TIM1, PWM_INITIAL_PULSE, true },
-      { TIM_CHANNEL_3, GPIOA, GPIO_PIN_10, GPIO_AF1_TIM1, PWM_INITIAL_PULSE, true },
+      { PWM_CHANNEL_1, GPIOA, GPIO_PIN_8,  GPIO_AF1_TIM1, PWM_INITIAL_PULSE, true },
+      { PWM_CHANNEL_2, GPIOA, GPIO_PIN_9,  GPIO_AF1_TIM1, PWM_INITIAL_PULSE, true },
+      { PWM_CHANNEL_3, GPIOA, GPIO_PIN_10, GPIO_AF1_TIM1, PWM_INITIAL_PULSE, true },
     },
     .channel_count = 3,
     .valid = true,
