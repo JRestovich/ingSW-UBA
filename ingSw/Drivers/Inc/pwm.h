@@ -37,6 +37,11 @@ typedef enum {
 	PWM_CHANNEL_4,
 } pwm_channel;
 
+typedef enum {
+	PWM_POLARITY_HIGH,
+	PWM_POLARITY_LOW,
+} pwm_polarity;
+
 pwm_t* PWM_ctor(timer_num tim);
 
 bool PWM_init(pwm_t *self);
@@ -46,6 +51,8 @@ bool PWM_start(pwm_t *self, pwm_channel channel);
 bool PWM_stop(pwm_t *self, pwm_channel channel);
 
 bool PWM_setDuty(pwm_t *self, pwm_channel channel, uint8_t duty_pcnt);
+
+bool PWM_setPolarity(pwm_t *self, pwm_channel channel, pwm_polarity polarity);
 
 #ifdef __cplusplus
 }

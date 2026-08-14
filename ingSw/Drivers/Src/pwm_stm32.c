@@ -13,6 +13,7 @@ typedef struct {
   uint16_t pin;
   uint32_t alternate;
   uint32_t initial_pulse;
+  pwm_polarity polarity;
   bool configured;
 } pwm_channel_t;
 
@@ -29,9 +30,9 @@ static pwm_t pwms[TIMER_COUNT] = {
   [TIMER1] = {
     .timer = TIM1,
     .channels = {
-      { PWM_CHANNEL_1, GPIOA, GPIO_PIN_8,  GPIO_AF1_TIM1, PWM_INITIAL_PULSE, true },
-      { PWM_CHANNEL_2, GPIOA, GPIO_PIN_9,  GPIO_AF1_TIM1, PWM_INITIAL_PULSE, true },
-      { PWM_CHANNEL_3, GPIOA, GPIO_PIN_10, GPIO_AF1_TIM1, PWM_INITIAL_PULSE, true },
+      { PWM_CHANNEL_1, GPIOA, GPIO_PIN_8,  GPIO_AF1_TIM1, PWM_INITIAL_PULSE, PWM_POLARITY_LOW, true },
+      { PWM_CHANNEL_2, GPIOA, GPIO_PIN_9,  GPIO_AF1_TIM1, PWM_INITIAL_PULSE, PWM_POLARITY_LOW, true },
+      { PWM_CHANNEL_3, GPIOA, GPIO_PIN_10, GPIO_AF1_TIM1, PWM_INITIAL_PULSE, PWM_POLARITY_LOW, true },
     },
     .channel_count = 3,
     .valid = true,
@@ -49,6 +50,7 @@ static bool pwm_configure_break_dead_time(pwm_t *self);
 static void pwm_configure_gpio(const pwm_channel_t *channel);
 static pwm_channel_t *pwm_find_channel(pwm_t *self, pwm_channel channel);
 static uint32_t pwm_hal_channel(pwm_channel channel);
+static uint32_t pwm_hal_polarity(pwm_polarity polarity);
 
 pwm_t *PWM_ctor(timer_num tim)
 {
@@ -111,8 +113,9 @@ bool PWM_stop(pwm_t *self, pwm_channel channel)
 bool PWM_setDuty(pwm_t *self, pwm_channel channel, uint8_t duty_pcnt)
 {
   uint32_t hal_channel = pwm_hal_channel(channel);
+  pwm_channel_t *configured_channel = pwm_find_channel(self, channel);
 
-  if (pwm_find_channel(self, channel) == NULL) {
+  if (configured_channel == NULL) {
     return false;
   }
 
@@ -121,9 +124,24 @@ bool PWM_setDuty(pwm_t *self, pwm_channel channel, uint8_t duty_pcnt)
   }
 
   uint32_t period = __HAL_TIM_GET_AUTORELOAD(&self->htim);
+  uint32_t pulse = period * duty_pcnt / 100U;
 
-  __HAL_TIM_SET_COMPARE(&self->htim, hal_channel, period*duty_pcnt/100);
+  configured_channel->initial_pulse = pulse;
+  __HAL_TIM_SET_COMPARE(&self->htim, hal_channel, pulse);
   return true;
+}
+
+bool PWM_setPolarity(pwm_t *self, pwm_channel channel, pwm_polarity polarity)
+{
+  pwm_channel_t *configured_channel = pwm_find_channel(self, channel);
+
+  if (configured_channel == NULL ||
+      (polarity > PWM_POLARITY_LOW)) {
+    return false;
+  }
+
+  configured_channel->polarity = polarity;
+  return pwm_configure_channel(self, configured_channel);
 }
 
 static void pwm_enable_timer_clock(TIM_TypeDef *timer)
@@ -184,7 +202,7 @@ static bool pwm_configure_channel(pwm_t *self, const pwm_channel_t *channel)
 
   output.OCMode = TIM_OCMODE_PWM1;
   output.Pulse = channel->initial_pulse;
-  output.OCPolarity = TIM_OCPOLARITY_HIGH;
+  output.OCPolarity = pwm_hal_polarity(channel->polarity);
   output.OCNPolarity = TIM_OCPOLARITY_HIGH;
   output.OCFastMode = TIM_OCFAST_DISABLE;
   output.OCIdleState = TIM_OCIDLESTATE_RESET;
@@ -256,4 +274,9 @@ static uint32_t pwm_hal_channel(pwm_channel channel)
     default:
       return TIM_CHANNEL_1;
   }
+}
+
+static uint32_t pwm_hal_polarity(pwm_polarity polarity)
+{
+  return polarity == PWM_POLARITY_LOW ? TIM_OCPOLARITY_LOW : TIM_OCPOLARITY_HIGH;
 }
