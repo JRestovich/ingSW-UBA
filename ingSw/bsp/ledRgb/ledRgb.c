@@ -26,9 +26,11 @@ static const ledRgbConfig_t led_rgb_configs[LED_RGB_COUNT] = {
 };
 
 static const ledRgbConfig_t *_getConfig(ledRgb_id id);
-uint8_t _color2pcnt(uint8_t col);
+static pwm_polarity _connection2polarity(ledRgb_elec_conn connection);
+static uint8_t _color2pcnt(uint8_t col);
 
-bool LED_RGB_ctor(ledRgb *led, ledRgb_id id, colorSequence *colSeq) {
+bool LED_RGB_ctor(ledRgb *led, ledRgb_id id, colorSequence *colSeq,
+                  ledRgb_elec_conn connection) {
     const ledRgbConfig_t *config;
 
     if (!led) {
@@ -36,12 +38,14 @@ bool LED_RGB_ctor(ledRgb *led, ledRgb_id id, colorSequence *colSeq) {
     }
     
     config = _getConfig(id);
-    if (!config || !colSeq || !colSeq->seq || colSeq->stepQty == 0) {
+    if (!config || !colSeq || !colSeq->seq || colSeq->stepQty == 0 ||
+        connection < LED_RGB_COMMON_CATHODE ||
+        connection > LED_RGB_COMMON_ANODE) {
         led->valid = false;
         return false;
     }
 
-    led->pwm = PWM_ctor(config->timer);
+    led->pwm = PWM_ctor(config->timer, _connection2polarity(connection));
     if (!led->pwm ||
         !PWM_hasChannel(led->pwm, config->channels.red) ||
         !PWM_hasChannel(led->pwm, config->channels.green) ||
@@ -162,6 +166,11 @@ static const ledRgbConfig_t *_getConfig(ledRgb_id id) {
     return &led_rgb_configs[id];
 }
 
-uint8_t _color2pcnt(uint8_t col) {
+static pwm_polarity _connection2polarity(ledRgb_elec_conn connection) {
+    return connection == LED_RGB_COMMON_ANODE ? PWM_POLARITY_LOW
+                                               : PWM_POLARITY_HIGH;
+}
+
+static uint8_t _color2pcnt(uint8_t col) {
     return col * 100 / COLOR_MAX;
 }

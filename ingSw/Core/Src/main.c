@@ -108,7 +108,8 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  if (!LED_RGB_ctor(&rgb_led, LED_RGB_STATUS_1, &rgb_sequence) ||
+  if (!LED_RGB_ctor(&rgb_led, LED_RGB_STATUS_1, &rgb_sequence,
+                    LED_RGB_COMMON_CATHODE) ||
       !LED_RGB_init(&rgb_led) ||
       !LED_RGB_start(&rgb_led))
   {

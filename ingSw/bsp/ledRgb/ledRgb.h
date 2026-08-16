@@ -46,6 +46,11 @@ typedef enum {
     LED_RGB_COUNT,
 } ledRgb_id;
 
+typedef enum {
+    LED_RGB_COMMON_CATHODE,
+    LED_RGB_COMMON_ANODE,
+} ledRgb_elec_conn;
+
 typedef struct
 {
     pwm_t *pwm;
@@ -54,7 +59,8 @@ typedef struct
     bool valid;
 } ledRgb;
 
-bool LED_RGB_ctor(ledRgb *led, ledRgb_id id, colorSequence *colSeq);
+bool LED_RGB_ctor(ledRgb *led, ledRgb_id id, colorSequence *colSeq,
+                  ledRgb_elec_conn connection);
 
 bool LED_RGB_init(ledRgb *self);
 
