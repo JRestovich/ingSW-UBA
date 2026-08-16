@@ -52,10 +52,15 @@ static pwm_channel_t *pwm_find_channel(pwm_t *self, pwm_channel channel);
 static uint32_t pwm_hal_channel(pwm_channel channel);
 static uint32_t pwm_hal_polarity(pwm_polarity polarity);
 
-pwm_t *PWM_ctor(timer_num tim)
+pwm_t *PWM_ctor(timer_num tim, pwm_polarity polarity)
 {
-  if (tim > TIMER4 || !pwms[tim].valid) {
+  if (tim > TIMER4 || !pwms[tim].valid ||
+      polarity < PWM_POLARITY_HIGH || polarity > PWM_POLARITY_LOW) {
     return NULL;
+  }
+
+  for (uint8_t index = 0U; index < pwms[tim].channel_count; index++) {
+    pwms[tim].channels[index].polarity = polarity;
   }
 
   return &pwms[tim];

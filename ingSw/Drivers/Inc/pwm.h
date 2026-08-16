@@ -42,7 +42,7 @@ typedef enum {
 	PWM_POLARITY_LOW,
 } pwm_polarity;
 
-pwm_t* PWM_ctor(timer_num tim);
+pwm_t* PWM_ctor(timer_num tim, pwm_polarity polarity);
 
 bool PWM_hasChannel(pwm_t *self, pwm_channel channel);
 
