@@ -44,6 +44,8 @@ typedef enum {
 
 pwm_t* PWM_ctor(timer_num tim);
 
+bool PWM_hasChannel(pwm_t *self, pwm_channel channel);
+
 bool PWM_init(pwm_t *self);
 
 bool PWM_start(pwm_t *self, pwm_channel channel);

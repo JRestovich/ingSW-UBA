@@ -1,27 +1,57 @@
 #include "ledRgb.h"
+#include <stddef.h>
 
 #define COLOR_MAX 255
 
-uint8_t color2pcnt(uint8_t col);
+typedef struct {
+    pwm_channel red;
+    pwm_channel green;
+    pwm_channel blue;
+} rgbChannels_t;
 
-bool LED_RGB_ctor(ledRgb *led, timer_num tim, colorSequence *colSeq) {
+typedef struct {
+    timer_num timer;
+    rgbChannels_t channels;
+} ledRgbConfig_t;
+
+static const ledRgbConfig_t led_rgb_configs[LED_RGB_COUNT] = {
+    [LED_RGB_STATUS_1] = {
+        .timer = TIMER1,
+        .channels = {
+            .red = PWM_CHANNEL_1,
+            .green = PWM_CHANNEL_2,
+            .blue = PWM_CHANNEL_3,
+        },
+    },
+};
+
+static const ledRgbConfig_t *_getConfig(ledRgb_id id);
+uint8_t _color2pcnt(uint8_t col);
+
+bool LED_RGB_ctor(ledRgb *led, ledRgb_id id, colorSequence *colSeq) {
+    const ledRgbConfig_t *config;
 
     if (!led) {
         return false;
     }
     
-    if (!colSeq || !colSeq->seq || colSeq->stepQty == 0) {
+    config = _getConfig(id);
+    if (!config || !colSeq || !colSeq->seq || colSeq->stepQty == 0) {
         led->valid = false;
         return false;
     }
 
-    led->pwm = PWM_ctor(tim);
-    if (!led->pwm) {
+    led->pwm = PWM_ctor(config->timer);
+    if (!led->pwm ||
+        !PWM_hasChannel(led->pwm, config->channels.red) ||
+        !PWM_hasChannel(led->pwm, config->channels.green) ||
+        !PWM_hasChannel(led->pwm, config->channels.blue)) {
         led->valid = false;
         return false;
     }
 
     led->colorSeq = colSeq;
+    led->id = id;
     led->colorSeq->index = 0;
     led->valid = true;
     return true;
@@ -32,48 +62,46 @@ bool LED_RGB_init(ledRgb *self) {
 }
 
 bool LED_RGB_start(ledRgb *self) {
-    static const pwm_channel rgb_channels[] = {
-        PWM_CHANNEL_1,
-        PWM_CHANNEL_2,
-        PWM_CHANNEL_3,
-    };
+    const ledRgbConfig_t *config;
 
     if (!self || !self->valid || !self->pwm) {
         return false;
     }
 
-    for (uint8_t i = 0; i < sizeof(rgb_channels) / sizeof(rgb_channels[0]); ++i) {
-        if (!PWM_start(self->pwm, rgb_channels[i])) {
-            while (i > 0) {
-                --i;
-                (void)PWM_stop(self->pwm, rgb_channels[i]);
-            }
-            return false;
-        }
+    config = _getConfig(self->id);
+    if (!config) {
+        return false;
     }
 
-    return true;
+    bool ok = true;
+    ok &= PWM_start(self->pwm, config->channels.red);
+    ok &= PWM_start(self->pwm, config->channels.green);
+    ok &= PWM_start(self->pwm, config->channels.blue);
+
+    if (!ok) {
+        (void)LED_RGB_stop(self);
+    }
+
+    return ok;
 }
 
 bool LED_RGB_stop(ledRgb *self) {
-    static const pwm_channel rgb_channels[] = {
-        PWM_CHANNEL_1,
-        PWM_CHANNEL_2,
-        PWM_CHANNEL_3,
-    };
-    bool stopped = true;
+    const ledRgbConfig_t *config;
 
     if (!self || !self->valid || !self->pwm) {
         return false;
     }
 
-    for (uint8_t i = 0; i < sizeof(rgb_channels) / sizeof(rgb_channels[0]); ++i) {
-        if (!PWM_stop(self->pwm, rgb_channels[i])) {
-            stopped = false;
-        }
+    config = _getConfig(self->id);
+    if (!config) {
+        return false;
     }
+    bool ok = true;
+    ok &= PWM_stop(self->pwm, config->channels.red);
+    ok &= PWM_stop(self->pwm, config->channels.green);
+    ok &= PWM_stop(self->pwm, config->channels.blue);
 
-    return stopped;
+    return ok;
 }
 
 bool LED_RGB_setColorSequence(ledRgb *self, colorSequence *colSeq) {
@@ -92,8 +120,15 @@ bool LED_RGB_setColorSequence(ledRgb *self, colorSequence *colSeq) {
 }
 
 bool LED_RGB_nextStep(ledRgb *self, bool cyclic) {
+    const ledRgbConfig_t *config;
+
     if (!self || !self->valid || !self->pwm || !self->colorSeq ||
         !self->colorSeq->seq || self->colorSeq->stepQty == 0) {
+        return false;
+    }
+
+    config = _getConfig(self->id);
+    if (!config) {
         return false;
     }
 
@@ -106,16 +141,27 @@ bool LED_RGB_nextStep(ledRgb *self, bool cyclic) {
     }
 
     color_s color = self->colorSeq->seq[self->colorSeq->index].color;
-    bool duty_set = PWM_setDuty(self->pwm, PWM_CHANNEL_1, color2pcnt(color.red));
-    duty_set = PWM_setDuty(self->pwm, PWM_CHANNEL_2, color2pcnt(color.green)) && duty_set;
-    duty_set = PWM_setDuty(self->pwm, PWM_CHANNEL_3, color2pcnt(color.blue)) && duty_set;
-    if (!duty_set) {
+
+    bool ok = true;
+    ok &= PWM_setDuty(self->pwm, config->channels.red, _color2pcnt(color.red));
+    ok &= PWM_setDuty(self->pwm, config->channels.green, _color2pcnt(color.green));
+    ok &= PWM_setDuty(self->pwm, config->channels.blue, _color2pcnt(color.blue));
+
+    if (!ok) {
         return LED_RGB_stop(self);
     }
 
-    return true;
+    return ok;
 }
 
-uint8_t color2pcnt(uint8_t col) {
+static const ledRgbConfig_t *_getConfig(ledRgb_id id) {
+    if ((unsigned int)id >= LED_RGB_COUNT) {
+        return NULL;
+    }
+
+    return &led_rgb_configs[id];
+}
+
+uint8_t _color2pcnt(uint8_t col) {
     return col * 100 / COLOR_MAX;
 }

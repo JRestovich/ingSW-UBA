@@ -61,6 +61,11 @@ pwm_t *PWM_ctor(timer_num tim)
   return &pwms[tim];
 }
 
+bool PWM_hasChannel(pwm_t *self, pwm_channel channel)
+{
+  return pwm_find_channel(self, channel) != NULL;
+}
+
 bool PWM_init(pwm_t *self)
 {
   if (self == NULL) {

@@ -41,14 +41,20 @@ typedef struct
     uint8_t index;
 } colorSequence;
 
+typedef enum {
+    LED_RGB_STATUS_1,
+    LED_RGB_COUNT,
+} ledRgb_id;
+
 typedef struct
 {
     pwm_t *pwm;
     colorSequence *colorSeq;
+    ledRgb_id id;
     bool valid;
 } ledRgb;
 
-bool LED_RGB_ctor(ledRgb *led, timer_num tim, colorSequence *colSeq);
+bool LED_RGB_ctor(ledRgb *led, ledRgb_id id, colorSequence *colSeq);
 
 bool LED_RGB_init(ledRgb *self);
 
