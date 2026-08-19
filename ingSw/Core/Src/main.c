@@ -18,7 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "pwm.h"
+#include "ledRgb.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -44,6 +44,19 @@
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
+static colorStep_t rgb_steps[] = {
+  { .color = { 33, 33, 33 }, .timeout_ms = 2000 },
+  { .color = { 66, 66, 66 }, .timeout_ms = 1000 },
+  { .color = { 0, 50, 100 }, .timeout_ms = 1000 },
+};
+
+static colorSequence rgb_sequence = {
+  .seq = rgb_steps,
+  .stepQty = sizeof(rgb_steps) / sizeof(rgb_steps[0]),
+  .index = 0,
+};
+
+static ledRgb rgb_led;
 
 /* USER CODE END PV */
 
@@ -91,37 +104,31 @@ int main(void)
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-  uint32_t delay = 10000;
-
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  pwm_t* led = PWM_ctor(TIMER1);
-  PWM_init(led);
-  PWM_start(led, PWM_CHANNEL_1);
-  PWM_start(led, PWM_CHANNEL_2);
-  PWM_start(led, PWM_CHANNEL_3);
+  if (!LED_RGB_ctor(&rgb_led, LED_RGB_STATUS_1, &rgb_sequence,
+                    LED_RGB_COMMON_CATHODE) ||
+      !LED_RGB_init(&rgb_led) ||
+      !LED_RGB_start(&rgb_led))
+  {
+    Error_Handler();
+  }
+
+  /* LED_RGB_nextStep avanza el índice antes de mostrar el color. */
+  rgb_sequence.index = rgb_sequence.stepQty - 1U;
 
   while (1)
   {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-//    PWM_setDuty(led, PWM_CHANNEL_1, 33);
-//    PWM_setDuty(led, PWM_CHANNEL_2, 33);
-//    PWM_setDuty(led, PWM_CHANNEL_3, 33);
-//    HAL_Delay(delay);
-//
-//    PWM_setDuty(led, PWM_CHANNEL_1, 66);
-//    PWM_setDuty(led, PWM_CHANNEL_2, 66);
-//    PWM_setDuty(led, PWM_CHANNEL_3, 66);
-//    HAL_Delay(delay);
-
-    PWM_setDuty(led, PWM_CHANNEL_1, 0);
-    PWM_setDuty(led, PWM_CHANNEL_2, 50);
-    PWM_setDuty(led, PWM_CHANNEL_3, 100);
-    HAL_Delay(delay);
+    if (!LED_RGB_nextStep(&rgb_led, true))
+    {
+      Error_Handler();
+    }
+    HAL_Delay(rgb_sequence.seq[rgb_sequence.index].timeout_ms);
   }
   /* USER CODE END 3 */
 }
