@@ -23,6 +23,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "ledRgb.h"
+#include "task.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -392,7 +393,7 @@ void StartDefaultTask(void *argument)
     {
       Error_Handler();
     }
-    HAL_Delay(rgb_sequence.seq[rgb_sequence.index].timeout_ms);
+    vTaskDelay(pdMS_TO_TICKS(rgb_sequence.seq[rgb_sequence.index].timeout_ms));
   }
   /* USER CODE END 5 */
 }
