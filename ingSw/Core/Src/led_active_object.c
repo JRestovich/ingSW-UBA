@@ -10,6 +10,9 @@ static void task_led_statechart(h_led_t *self);
 static void led_ao_timeout_callback(TimerHandle_t timer);
 static void led_ao_stop_timer(h_led_t *self);
 static void led_ao_schedule_timeout(h_led_t *self);
+static bool led_ao_turn_off(h_led_t *self);
+static bool led_ao_turn_on(h_led_t *self);
+static bool led_ao_start_blink(h_led_t *self);
 
 void led_ao_open(h_led_t *self,
                  ledRgb_id id,
@@ -130,54 +133,126 @@ static void task_led(void *parameters)
 
 static void task_led_statechart(h_led_t *self)
 {
-    switch (self->led_sc.ev_in)
+    switch (self->led_sc.state)
     {
-        case EV_LED_OFF:
-            led_ao_stop_timer(self);
-            if (LED_RGB_stop(&self->led))
+        case ST_LED_OFF:
+            switch (self->led_sc.ev_in)
             {
-                self->led_sc.state = ST_LED_OFF;
+                case EV_LED_OFF:
+                    (void)led_ao_turn_off(self);
+                    break;
+
+                case EV_LED_ON:
+                    if (led_ao_turn_on(self))
+                    {
+                        self->led_sc.state = ST_LED_ON;
+                    }
+                    break;
+
+                case EV_LED_BLINK:
+                    if (led_ao_start_blink(self))
+                    {
+                        self->led_sc.state = ST_LED_BLINK;
+                    }
+                    break;
+
+                case EV_LED_TIMEOUT:
+                case EV_LED_NONE:
+                default:
+                    break;
             }
             break;
 
-        case EV_LED_ON:
-            led_ao_stop_timer(self);
-            if (LED_RGB_start(&self->led) && LED_RGB_setColor(&self->led, 0U))
+        case ST_LED_ON:
+            switch (self->led_sc.ev_in)
             {
-                self->led_sc.state = ST_LED_ON;
+                case EV_LED_OFF:
+                    if (led_ao_turn_off(self))
+                    {
+                        self->led_sc.state = ST_LED_OFF;
+                    }
+                    break;
+
+                case EV_LED_ON:
+                    (void)led_ao_turn_on(self);
+                    break;
+
+                case EV_LED_BLINK:
+                    if (led_ao_start_blink(self))
+                    {
+                        self->led_sc.state = ST_LED_BLINK;
+                    }
+                    break;
+
+                case EV_LED_TIMEOUT:
+                case EV_LED_NONE:
+                default:
+                    break;
             }
             break;
 
-        case EV_LED_BLINK:
-            if (self->led_sc.state != ST_LED_BLINK)
+        case ST_LED_BLINK:
+            switch (self->led_sc.ev_in)
             {
-                if (LED_RGB_start(&self->led) && LED_RGB_nextStep(&self->led, true))
-                {
-                    self->led_sc.state = ST_LED_BLINK;
-                }
-            }
-            if (self->led_sc.state == ST_LED_BLINK)
-            {
-                led_ao_schedule_timeout(self);
-            }
-            break;
+                case EV_LED_OFF:
+                    if (led_ao_turn_off(self))
+                    {
+                        self->led_sc.state = ST_LED_OFF;
+                    }
+                    break;
 
-        case EV_LED_TIMEOUT:
-            if (self->led_sc.state == ST_LED_BLINK)
-            {
-                if (LED_RGB_nextStep(&self->led, true))
-                {
+                case EV_LED_ON:
+                    if (led_ao_turn_on(self))
+                    {
+                        self->led_sc.state = ST_LED_ON;
+                    }
+                    break;
+
+                case EV_LED_BLINK:
                     led_ao_schedule_timeout(self);
-                }
+                    break;
+
+                case EV_LED_TIMEOUT:
+                    if (LED_RGB_nextStep(&self->led, true))
+                    {
+                        led_ao_schedule_timeout(self);
+                    }
+                    break;
+
+                case EV_LED_NONE:
+                default:
+                    break;
             }
             break;
 
-        case EV_LED_NONE:
         default:
             break;
     }
 
     self->led_sc.ev_in = EV_LED_NONE;
+}
+
+static bool led_ao_turn_off(h_led_t *self)
+{
+    led_ao_stop_timer(self);
+    return LED_RGB_stop(&self->led);
+}
+
+static bool led_ao_turn_on(h_led_t *self)
+{
+    led_ao_stop_timer(self);
+    return LED_RGB_start(&self->led) && LED_RGB_setColor(&self->led, 0U);
+}
+
+static bool led_ao_start_blink(h_led_t *self)
+{
+    if (!LED_RGB_start(&self->led) || !LED_RGB_nextStep(&self->led, true))
+    {
+        return false;
+    }
+
+    led_ao_schedule_timeout(self);
+    return true;
 }
 
 static void led_ao_stop_timer(h_led_t *self)
