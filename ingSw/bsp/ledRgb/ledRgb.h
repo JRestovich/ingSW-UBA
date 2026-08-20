@@ -70,6 +70,8 @@ bool LED_RGB_stop(ledRgb *self);
 
 bool LED_RGB_setColorSequence(ledRgb *self, colorSequence *colSeq);
 
+bool LED_RGB_setColor(ledRgb *self, uint8_t index);
+
 bool LED_RGB_nextStep(ledRgb *self, bool cyclic);
 
 #ifdef __cplusplus
