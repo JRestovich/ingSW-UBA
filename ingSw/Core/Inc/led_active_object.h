@@ -48,7 +48,10 @@ typedef struct
 /********************** external data declaration ****************************/
 
 /********************** external functions declaration ***********************/
-void led_ao_open(h_led_t *self);
+void led_ao_open(h_led_t *self,
+                 ledRgb_id id,
+                 colorSequence *color_sequence,
+                 ledRgb_elec_conn connection);
 void led_ao_release(h_led_t *self);
 BaseType_t led_ao_send(h_led_t *self, const led_ev_t *event);
 
