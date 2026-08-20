@@ -23,6 +23,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "ledRgb.h"
+#include "led_active_object.h"
 #include "task.h"
 /* USER CODE END Includes */
 
@@ -55,9 +56,9 @@ const osThreadAttr_t defaultTask_attributes = {
 };
 /* USER CODE BEGIN PV */
 static colorStep_t rgb_steps[] = {
-  { .color = { 33, 33, 33 }, .timeout_ms = 2000 },
-  { .color = { 66, 66, 66 }, .timeout_ms = 1000 },
-  { .color = { 0, 50, 100 }, .timeout_ms = 1000 },
+  { .color = { 0, 0, 0 }, .timeout_ms = 3000 },
+  { .color = { 66, 66, 66 }, .timeout_ms = 3000 },
+  { .color = { 100, 100, 100 }, .timeout_ms = 3000 },
 };
 
 static colorSequence rgb_sequence = {
@@ -66,7 +67,20 @@ static colorSequence rgb_sequence = {
   .index = 0,
 };
 
-static ledRgb rgb_led;
+static h_led_t status_led = {
+  .led_sc = {
+    .state = ST_LED_OFF,
+    .ev_in = EV_LED_NONE,
+    .tick = 0U,
+  },
+  .ao = {
+    .h_task = NULL,
+    .h_queue = NULL,
+    .queue_txt = "ledQueue",
+    .task_txt = "ledAO",
+  },
+  .h_timer = NULL,
+};
 
 /* USER CODE END PV */
 
@@ -144,7 +158,15 @@ int main(void)
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
-  /* add threads, ... */
+  const led_ev_t initial_event = EV_LED_BLINK;
+
+  led_ao_open(&status_led, LED_RGB_STATUS_1, &rgb_sequence,
+              LED_RGB_COMMON_ANODE);
+
+  if (led_ao_send(&status_led, &initial_event) != pdPASS)
+  {
+    Error_Handler();
+  }
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
@@ -379,22 +401,8 @@ static void MX_GPIO_Init(void)
 void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
-  if (!LED_RGB_ctor(&rgb_led, LED_RGB_STATUS_1, &rgb_sequence,
-                    LED_RGB_COMMON_CATHODE) ||
-      !LED_RGB_init(&rgb_led) ||
-      !LED_RGB_start(&rgb_led))
-  {
-    Error_Handler();
-  }
-  /* Infinite loop */
-  for(;;)
-  {
-    if (!LED_RGB_nextStep(&rgb_led, true))
-    {
-      Error_Handler();
-    }
-    vTaskDelay(pdMS_TO_TICKS(rgb_sequence.seq[rgb_sequence.index].timeout_ms));
-  }
+  (void)argument;
+  vTaskDelete(NULL);
   /* USER CODE END 5 */
 }
 
