@@ -9,6 +9,7 @@ extern "C" {
 /********************** inclusions *******************************************/
 #include "active_object.h"
 #include "ledRgb.h"
+#include "timers.h"
 
 /********************** macros ***********************************************/
 
@@ -18,6 +19,7 @@ typedef enum
     EV_LED_OFF,
     EV_LED_ON,
     EV_LED_BLINK,
+    EV_LED_TIMEOUT,
     EV_LED_NONE
 } led_ev_t;
 
@@ -40,6 +42,7 @@ typedef struct
     ledRgb led;
     led_sc_t led_sc;
     active_object_t ao;
+    TimerHandle_t h_timer;
 } h_led_t;
 
 /********************** external data declaration ****************************/
