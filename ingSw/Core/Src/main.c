@@ -24,6 +24,9 @@
 /* USER CODE BEGIN Includes */
 #include "ledRgb.h"
 #include "task.h"
+#include "uart.h"
+#include "queue.h"
+#include <string.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -33,6 +36,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define UART_RX_BUFFER_SIZE 64U
+#define UART_TX_QUEUE_LENGTH 4U
 
 /* USER CODE END PD */
 
@@ -43,8 +48,6 @@
 
 /* Private variables ---------------------------------------------------------*/
 TIM_HandleTypeDef htim1;
-
-UART_HandleTypeDef huart2;
 
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
@@ -68,16 +71,31 @@ static colorSequence rgb_sequence = {
 
 static ledRgb rgb_led;
 
+static uart_t *uart2;
+static uint8_t uart_rx_buffer[UART_RX_BUFFER_SIZE];
+static volatile uint16_t uart_rx_size;
+static TaskHandle_t uart_rx_task_handle;
+static TaskHandle_t uart_tx_task_handle;
+static QueueHandle_t uart_tx_queue;
+
+typedef struct {
+  uint8_t data[UART_RX_BUFFER_SIZE];
+  uint16_t size;
+} uart_message_t;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_USART2_UART_Init(void);
 static void MX_TIM1_Init(void);
 void StartDefaultTask(void *argument);
+void StartUartRxTask(void *argument);
+void StartUartTxTask(void *argument);
 
 /* USER CODE BEGIN PFP */
+static void UART_rxCompleteCallback(uint16_t size);
+static void UART_txCompleteCallback(void);
 
 /* USER CODE END PFP */
 
@@ -115,9 +133,16 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_USART2_UART_Init();
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
+  uart2 = UART_ctor(UART_2);
+  if (uart2 == NULL ||
+      !UART_init(uart2, BAUDRATE_115200, ONE_STOP_BIT, NONE) ||
+      !UART_setRxCallback(uart2, UART_rxCompleteCallback) ||
+      !UART_setTxCallback(uart2, UART_txCompleteCallback))
+  {
+    Error_Handler();
+  }
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -136,7 +161,11 @@ int main(void)
   /* USER CODE END RTOS_TIMERS */
 
   /* USER CODE BEGIN RTOS_QUEUES */
-  /* add queues, ... */
+  uart_tx_queue = xQueueCreate(UART_TX_QUEUE_LENGTH, sizeof(uart_message_t));
+  if (uart_tx_queue == NULL)
+  {
+    Error_Handler();
+  }
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
@@ -144,7 +173,13 @@ int main(void)
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
-  /* add threads, ... */
+  if (xTaskCreate(StartUartRxTask, "uartRx", configMINIMAL_STACK_SIZE,
+                  NULL, tskIDLE_PRIORITY + 1U, &uart_rx_task_handle) != pdPASS ||
+      xTaskCreate(StartUartTxTask, "uartTx", configMINIMAL_STACK_SIZE,
+                  NULL, tskIDLE_PRIORITY + 1U, &uart_tx_task_handle) != pdPASS)
+  {
+    Error_Handler();
+  }
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
@@ -294,39 +329,6 @@ static void MX_TIM1_Init(void)
 }
 
 /**
-  * @brief USART2 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_USART2_UART_Init(void)
-{
-
-  /* USER CODE BEGIN USART2_Init 0 */
-
-  /* USER CODE END USART2_Init 0 */
-
-  /* USER CODE BEGIN USART2_Init 1 */
-
-  /* USER CODE END USART2_Init 1 */
-  huart2.Instance = USART2;
-  huart2.Init.BaudRate = 115200;
-  huart2.Init.WordLength = UART_WORDLENGTH_8B;
-  huart2.Init.StopBits = UART_STOPBITS_1;
-  huart2.Init.Parity = UART_PARITY_NONE;
-  huart2.Init.Mode = UART_MODE_TX_RX;
-  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
-  if (HAL_UART_Init(&huart2) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN USART2_Init 2 */
-
-  /* USER CODE END USART2_Init 2 */
-
-}
-
-/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -396,6 +398,72 @@ void StartDefaultTask(void *argument)
     vTaskDelay(pdMS_TO_TICKS(rgb_sequence.seq[rgb_sequence.index].timeout_ms));
   }
   /* USER CODE END 5 */
+}
+
+void StartUartRxTask(void *argument)
+{
+  uart_message_t message;
+
+  (void)argument;
+
+  for (;;) {
+    if (!UART_readAsync(uart2, uart_rx_buffer, sizeof(uart_rx_buffer))) {
+      Error_Handler();
+    }
+
+    (void)ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+    message.size = uart_rx_size;
+    if (message.size > sizeof(message.data)) {
+      Error_Handler();
+    }
+    memcpy(message.data, uart_rx_buffer, message.size);
+
+    if (xQueueSend(uart_tx_queue, &message, portMAX_DELAY) != pdPASS) {
+      Error_Handler();
+    }
+  }
+}
+
+void StartUartTxTask(void *argument)
+{
+  uart_message_t message;
+
+  (void)argument;
+
+  for (;;) {
+    if (xQueueReceive(uart_tx_queue, &message, portMAX_DELAY) != pdPASS) {
+      Error_Handler();
+    }
+
+    if (!UART_sendAsync(uart2, message.data, message.size)) {
+      Error_Handler();
+    }
+
+    (void)ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+  }
+}
+
+static void UART_rxCompleteCallback(uint16_t size)
+{
+  BaseType_t higher_priority_task_woken = pdFALSE;
+
+  if (uart_rx_task_handle != NULL) {
+    uart_rx_size = size;
+    vTaskNotifyGiveFromISR(uart_rx_task_handle, &higher_priority_task_woken);
+  }
+
+  portYIELD_FROM_ISR(higher_priority_task_woken);
+}
+
+static void UART_txCompleteCallback(void)
+{
+  BaseType_t higher_priority_task_woken = pdFALSE;
+
+  if (uart_tx_task_handle != NULL) {
+    vTaskNotifyGiveFromISR(uart_tx_task_handle, &higher_priority_task_woken);
+  }
+
+  portYIELD_FROM_ISR(higher_priority_task_woken);
 }
 
 /**
