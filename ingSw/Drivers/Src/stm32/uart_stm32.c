@@ -100,7 +100,7 @@ bool UART_setRxCallback(uart_t *self, uart_rxCallback_t callback)
   return true;
 }
 
-bool UART_send(uart_t *self, uint8_t *pData, uint16_t size)
+bool UART_send(uart_t *self, const uint8_t *pData, uint16_t size)
 {
   if (self == NULL || !self->valid || pData == NULL || size == 0U) {
     return false;
@@ -109,7 +109,7 @@ bool UART_send(uart_t *self, uint8_t *pData, uint16_t size)
   return HAL_UART_Transmit(&self->huart, pData, size, 10) == HAL_OK;
 }
 
-bool UART_sendAsync(uart_t *self, uint8_t *pData, uint16_t size)
+bool UART_sendAsync(uart_t *self, const uint8_t *pData, uint16_t size)
 {
   if (self == NULL || !self->valid || pData == NULL || size == 0U) {
     return false;

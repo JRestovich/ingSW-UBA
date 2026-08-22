@@ -55,9 +55,9 @@ bool UART_setTxCallback(uart_t *self, uart_txCallback_t callback);
 
 bool UART_setRxCallback(uart_t *self, uart_rxCallback_t callback);
 
-bool UART_send(uart_t *self, uint8_t *pData, uint16_t size);
+bool UART_send(uart_t *self, const uint8_t *pData, uint16_t size);
 
-bool UART_sendAsync(uart_t *self, uint8_t *pData, uint16_t size);
+bool UART_sendAsync(uart_t *self, const uint8_t *pData, uint16_t size);
 
 bool UART_read(uart_t *self, uint8_t *pData, uint16_t size, uint16_t *rxLen);
 
