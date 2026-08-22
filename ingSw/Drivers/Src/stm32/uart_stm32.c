@@ -43,6 +43,7 @@ static bool _uart_init_base(uart_t *self, BAUDRATE_t baud,
 static uint32_t _uart_hal_stop_bits(STOP_BITS_t stop_bits);
 static uint32_t _uart_hal_parity(PARITY_t parity);
 static void _uart_enable_irq(USART_TypeDef *instance);
+static void _uart_irq_handler(uart_num uart_num);
 static uart_t *_uart_from_handle(UART_HandleTypeDef *huart);
 
 uart_t *UART_ctor(uart_num uartNum)
@@ -99,31 +100,39 @@ bool UART_setRxCallback(uart_t *self, uart_rxCallback_t callback)
   return true;
 }
 
-bool UART_send(uart_t *self, uint8_t *pData, uint16_t size) {
-  if (!self || !self->valid) {
+bool UART_send(uart_t *self, uint8_t *pData, uint16_t size)
+{
+  if (self == NULL || !self->valid || pData == NULL || size == 0U) {
     return false;
   }
+
   return HAL_UART_Transmit(&self->huart, pData, size, 10) == HAL_OK;
 }
 
-bool UART_sendAsync(uart_t *self, uint8_t *pData, uint16_t size) {
-  if (!self || !self->valid) {
+bool UART_sendAsync(uart_t *self, uint8_t *pData, uint16_t size)
+{
+  if (self == NULL || !self->valid || pData == NULL || size == 0U) {
     return false;
   }
+
   return HAL_UART_Transmit_IT(&self->huart, pData, size) == HAL_OK;
 }
 
-bool UART_read(uart_t *self, uint8_t *pData, uint16_t size, uint16_t *rxLen) {
-  if (!self || !self->valid) {
+bool UART_read(uart_t *self, uint8_t *pData, uint16_t size, uint16_t *rxLen)
+{
+  if (self == NULL || !self->valid || pData == NULL || size == 0U || rxLen == NULL) {
     return false;
   }
+
   return HAL_UARTEx_ReceiveToIdle(&self->huart, pData, size, rxLen, 10) == HAL_OK;
 }
 
-bool UART_readAsync(uart_t *self, uint8_t *pData, uint16_t size) {
-  if (!self || !self->valid) {
+bool UART_readAsync(uart_t *self, uint8_t *pData, uint16_t size)
+{
+  if (self == NULL || !self->valid || pData == NULL || size == 0U) {
     return false;
   }
+
   return HAL_UARTEx_ReceiveToIdle_IT(&self->huart, pData, size) == HAL_OK;
 }
 
@@ -243,4 +252,35 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size)
   if (self != NULL && self->rxCompleteCallback != NULL) {
     self->rxCompleteCallback(size);
   }
+}
+
+void USART1_IRQHandler(void)
+{
+  _uart_irq_handler(UART_1);
+}
+
+void USART2_IRQHandler(void)
+{
+  _uart_irq_handler(UART_2);
+}
+
+void USART3_IRQHandler(void)
+{
+  _uart_irq_handler(UART_3);
+}
+
+static void _uart_irq_handler(uart_num uart_num)
+{
+  uart_t *self;
+
+  if (uart_num >= UART_COUNT) {
+    return;
+  }
+
+  self = &uarts[uart_num];
+  if (!self->valid || self->huart.Instance == NULL) {
+    return;
+  }
+
+  HAL_UART_IRQHandler(&self->huart);
 }
