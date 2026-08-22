@@ -94,9 +94,8 @@ void StartUartRxTask(void *argument);
 void StartUartTxTask(void *argument);
 
 /* USER CODE BEGIN PFP */
-static void UART_rxCompleteCallback(uint16_t size);
-static void UART_txCompleteCallback(void);
-
+static void UART_rxCompleteCallback(uint16_t size, void *context);
+static void UART_txCompleteCallback(void *context);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -138,8 +137,8 @@ int main(void)
   uart2 = UART_ctor(UART_2);
   if (uart2 == NULL ||
       !UART_init(uart2, BAUDRATE_115200, ONE_STOP_BIT, NONE) ||
-      !UART_setRxCallback(uart2, UART_rxCompleteCallback) ||
-      !UART_setTxCallback(uart2, UART_txCompleteCallback))
+      !UART_setRxCallback(uart2, UART_rxCompleteCallback, NULL) ||
+      !UART_setTxCallback(uart2, UART_txCompleteCallback, NULL))
   {
     Error_Handler();
   }
@@ -443,10 +442,11 @@ void StartUartTxTask(void *argument)
   }
 }
 
-static void UART_rxCompleteCallback(uint16_t size)
+static void UART_rxCompleteCallback(uint16_t size, void *context)
 {
   BaseType_t higher_priority_task_woken = pdFALSE;
 
+  (void)context;
   if (uart_rx_task_handle != NULL) {
     uart_rx_size = size;
     vTaskNotifyGiveFromISR(uart_rx_task_handle, &higher_priority_task_woken);
@@ -455,10 +455,11 @@ static void UART_rxCompleteCallback(uint16_t size)
   portYIELD_FROM_ISR(higher_priority_task_woken);
 }
 
-static void UART_txCompleteCallback(void)
+static void UART_txCompleteCallback(void *context)
 {
   BaseType_t higher_priority_task_woken = pdFALSE;
 
+  (void)context;
   if (uart_tx_task_handle != NULL) {
     vTaskNotifyGiveFromISR(uart_tx_task_handle, &higher_priority_task_woken);
   }

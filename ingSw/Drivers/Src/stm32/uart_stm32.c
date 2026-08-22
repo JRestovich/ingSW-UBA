@@ -16,7 +16,10 @@ typedef struct struct_uart_t
   uint32_t alternate;
 
   uart_txCallback_t txCompleteCallback;
+  void *txCompleteContext;
+  
   uart_rxCallback_t rxCompleteCallback;
+  void *rxCompleteContext;
 
   bool valid;
 } uart_t;
@@ -80,23 +83,25 @@ bool UART_init(uart_t *self, BAUDRATE_t baud, STOP_BITS_t stopBits,
   return _uart_init_base(self, baud, stopBits, parity);
 }
 
-bool UART_setTxCallback(uart_t *self, uart_txCallback_t callback)
+bool UART_setTxCallback(uart_t *self, uart_txCallback_t callback, void *context)
 {
   if (self == NULL || !self->valid) {
     return false;
   }
 
   self->txCompleteCallback = callback;
+  self->txCompleteContext = context;
   return true;
 }
 
-bool UART_setRxCallback(uart_t *self, uart_rxCallback_t callback)
+bool UART_setRxCallback(uart_t *self, uart_rxCallback_t callback, void *context)
 {
   if (self == NULL || !self->valid) {
     return false;
   }
 
   self->rxCompleteCallback = callback;
+  self->rxCompleteContext = context;
   return true;
 }
 
@@ -241,7 +246,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
   uart_t *self = _uart_from_handle(huart);
 
   if (self != NULL && self->txCompleteCallback != NULL) {
-    self->txCompleteCallback();
+    self->txCompleteCallback(self->txCompleteContext);
   }
 }
 
@@ -250,7 +255,7 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size)
   uart_t *self = _uart_from_handle(huart);
 
   if (self != NULL && self->rxCompleteCallback != NULL) {
-    self->rxCompleteCallback(size);
+    self->rxCompleteCallback(size, self->rxCompleteContext);
   }
 }
 
