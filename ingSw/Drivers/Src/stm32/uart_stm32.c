@@ -15,8 +15,8 @@ typedef struct struct_uart_t
   uint16_t pin_tx;
   uint32_t alternate;
 
-  uart_callback_t txCompleteCallback;
-  uart_callback_t rxCompleteCallback;
+  uart_txCallback_t txCompleteCallback;
+  uart_rxCallback_t rxCompleteCallback;
 
   bool valid;
 } uart_t;
@@ -79,7 +79,7 @@ bool UART_init(uart_t *self, BAUDRATE_t baud, STOP_BITS_t stopBits,
   return _uart_init_base(self, baud, stopBits, parity);
 }
 
-bool UART_setTxCallback(uart_t *self, uart_callback_t callback)
+bool UART_setTxCallback(uart_t *self, uart_txCallback_t callback)
 {
   if (self == NULL || !self->valid) {
     return false;
@@ -89,7 +89,7 @@ bool UART_setTxCallback(uart_t *self, uart_callback_t callback)
   return true;
 }
 
-bool UART_setRxCallback(uart_t *self, uart_callback_t callback)
+bool UART_setRxCallback(uart_t *self, uart_rxCallback_t callback)
 {
   if (self == NULL || !self->valid) {
     return false;
@@ -97,6 +97,34 @@ bool UART_setRxCallback(uart_t *self, uart_callback_t callback)
 
   self->rxCompleteCallback = callback;
   return true;
+}
+
+bool UART_send(uart_t *self, uint8_t *pData, uint16_t size) {
+  if (!self || !self->valid) {
+    return false;
+  }
+  return HAL_UART_Transmit(&self->huart, pData, size, 10) == HAL_OK;
+}
+
+bool UART_sendAsync(uart_t *self, uint8_t *pData, uint16_t size) {
+  if (!self || !self->valid) {
+    return false;
+  }
+  return HAL_UART_Transmit_IT(&self->huart, pData, size) == HAL_OK;
+}
+
+bool UART_read(uart_t *self, uint8_t *pData, uint16_t size, uint16_t *rxLen) {
+  if (!self || !self->valid) {
+    return false;
+  }
+  return HAL_UARTEx_ReceiveToIdle(&self->huart, pData, size, rxLen, 10) == HAL_OK;
+}
+
+bool UART_readAsync(uart_t *self, uint8_t *pData, uint16_t size) {
+  if (!self || !self->valid) {
+    return false;
+  }
+  return HAL_UARTEx_ReceiveToIdle_IT(&self->huart, pData, size) == HAL_OK;
 }
 
 static void _uart_enable_clock(USART_TypeDef *instance)
@@ -150,7 +178,7 @@ static bool _uart_init_base(uart_t *self, BAUDRATE_t baud,
     return false;
   }
 
-  _uart_enable_irq(&self->instance);
+  _uart_enable_irq(self->instance);
 
   return true;
 }
@@ -176,7 +204,7 @@ static uint32_t _uart_hal_parity(PARITY_t parity)
 static void _uart_enable_irq(USART_TypeDef *instance)
 {
   if (instance == USART1) {
-    HAL_NVIC_SetPriority(USART_IRQn, 5, 0);
+    HAL_NVIC_SetPriority(USART1_IRQn, 5, 0);
     HAL_NVIC_EnableIRQ(USART1_IRQn);
   } else if (instance == USART2) {
     HAL_NVIC_SetPriority(USART2_IRQn, 5, 0);
@@ -208,11 +236,11 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
   }
 }
 
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size)
 {
   uart_t *self = _uart_from_handle(huart);
 
   if (self != NULL && self->rxCompleteCallback != NULL) {
-    self->rxCompleteCallback();
+    self->rxCompleteCallback(size);
   }
 }
