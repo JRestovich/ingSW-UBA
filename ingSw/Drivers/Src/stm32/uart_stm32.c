@@ -3,8 +3,6 @@
 #include "stm32f4xx_hal.h"
 #include "ring_buffer.h"
 
-#define UART_RX_RING_BUFFER_LEN 64U
-
 typedef struct struct_uart_t
 {
   UART_HandleTypeDef huart;
@@ -17,8 +15,8 @@ typedef struct struct_uart_t
   uint16_t pin_tx;
   uint32_t alternate;
 
-  uint8_t ring_storage[UART_RX_RING_BUFFER_LEN];
-  ring_buffer_t ring_rx;
+  uart_callback_t txCompleteCallback;
+  uart_callback_t rxCompleteCallback;
 
   bool valid;
 } uart_t;
@@ -44,6 +42,8 @@ static bool _uart_init_base(uart_t *self, BAUDRATE_t baud,
                             STOP_BITS_t stop_bits, PARITY_t parity);
 static uint32_t _uart_hal_stop_bits(STOP_BITS_t stop_bits);
 static uint32_t _uart_hal_parity(PARITY_t parity);
+static void _uart_enable_irq(USART_TypeDef *instance);
+static uart_t *_uart_from_handle(UART_HandleTypeDef *huart);
 
 uart_t *UART_ctor(uart_num uartNum)
 {
@@ -67,15 +67,6 @@ uart_t *UART_ctor(uart_num uartNum)
   return self;
 }
 
-bool UART_hasChannel(uart_t *self, pwm_channel channel)
-{
-  (void)self;
-  (void)channel;
-
-  /* UART no posee canales: se conserva por compatibilidad con uart.h. */
-  return false;
-}
-
 bool UART_init(uart_t *self, BAUDRATE_t baud, STOP_BITS_t stopBits,
                PARITY_t parity)
 {
@@ -86,6 +77,26 @@ bool UART_init(uart_t *self, BAUDRATE_t baud, STOP_BITS_t stopBits,
   }
 
   return _uart_init_base(self, baud, stopBits, parity);
+}
+
+bool UART_setTxCallback(uart_t *self, uart_callback_t callback)
+{
+  if (self == NULL || !self->valid) {
+    return false;
+  }
+
+  self->txCompleteCallback = callback;
+  return true;
+}
+
+bool UART_setRxCallback(uart_t *self, uart_callback_t callback)
+{
+  if (self == NULL || !self->valid) {
+    return false;
+  }
+
+  self->rxCompleteCallback = callback;
+  return true;
 }
 
 static void _uart_enable_clock(USART_TypeDef *instance)
@@ -135,7 +146,13 @@ static bool _uart_init_base(uart_t *self, BAUDRATE_t baud,
   self->huart.Init.HwFlowCtl = UART_HWCONTROL_NONE;
   self->huart.Init.OverSampling = UART_OVERSAMPLING_16;
 
-  return HAL_UART_Init(&self->huart) == HAL_OK;
+  if (HAL_UART_Init(&self->huart) != HAL_OK) {
+    return false;
+  }
+
+  _uart_enable_irq(&self->instance);
+
+  return true;
 }
 
 static uint32_t _uart_hal_stop_bits(STOP_BITS_t stop_bits)
@@ -153,5 +170,49 @@ static uint32_t _uart_hal_parity(PARITY_t parity)
     case NONE:
     default:
       return UART_PARITY_NONE;
+  }
+}
+
+static void _uart_enable_irq(USART_TypeDef *instance)
+{
+  if (instance == USART1) {
+    HAL_NVIC_SetPriority(USART_IRQn, 5, 0);
+    HAL_NVIC_EnableIRQ(USART1_IRQn);
+  } else if (instance == USART2) {
+    HAL_NVIC_SetPriority(USART2_IRQn, 5, 0);
+    HAL_NVIC_EnableIRQ(USART2_IRQn);
+  } else if (instance == USART3) {
+    HAL_NVIC_SetPriority(USART3_IRQn, 5, 0);
+    HAL_NVIC_EnableIRQ(USART3_IRQn);
+  }
+}
+
+static uart_t *_uart_from_handle(UART_HandleTypeDef *huart)
+{
+  for (uart_num uart_num = UART_1; uart_num < UART_COUNT; uart_num++) {
+    if (uarts[uart_num].valid && &uarts[uart_num].huart == huart) {
+      return &uarts[uart_num];
+    }
+  }
+
+  return NULL;
+}
+
+/* ST Callbacks */
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+{
+  uart_t *self = _uart_from_handle(huart);
+
+  if (self != NULL && self->txCompleteCallback != NULL) {
+    self->txCompleteCallback();
+  }
+}
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+  uart_t *self = _uart_from_handle(huart);
+
+  if (self != NULL && self->rxCompleteCallback != NULL) {
+    self->rxCompleteCallback();
   }
 }

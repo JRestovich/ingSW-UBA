@@ -21,6 +21,7 @@ extern "C" {
 
 /* USER CODE END Includes */
 typedef struct struct_uart_t uart_t;
+typedef void (*uart_callback_t)(void);
 
 typedef enum {
 	UART_1,
@@ -47,10 +48,11 @@ typedef enum {
 
 uart_t* UART_ctor(uart_num uartNum);
 
-bool UART_hasChannel(uart_t *self, pwm_channel channel);
-
 bool UART_init(uart_t *self, BAUDRATE_t baud, STOP_BITS_t stopBits, PARITY_t parity);
 
+bool UART_setTxCallback(uart_t *self, uart_callback_t callback);
+
+bool UART_setRxCallback(uart_t *self, uart_callback_t callback);
 #ifdef __cplusplus
 }
 #endif
