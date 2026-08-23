@@ -16,6 +16,7 @@ static void task_rx_parser(void *parameters);
 static bool _open(uart_dispatcher_t *uartDispatcher, uart_num uartNum);
 static bool _dispatch(uart_dispatcher_t *uartDispatcher,
                       const protocolData_u *message);
+static void _clearMessage(protocolData_u *message);
 
 struct uart_dispatcher {
 	bool ready;
@@ -118,9 +119,9 @@ static void task_rx_parser(void *parameters)
 			uint8_t byte = rxDataBuffer[idx];
 
 			switch (parser_state) {
-				case PARSER_IDLE:
+			case PARSER_IDLE:
 					if (byte == (uint8_t)PROTOCOL_START_BYTE) {
-						memset(&message, 0, sizeof(message));
+						_clearMessage(&message);
 						message.frame.startByte = byte;
 						parser_state = PARSER_SUBSYSTEM;
 					}
@@ -136,8 +137,9 @@ static void task_rx_parser(void *parameters)
 					parser_state = PARSER_SIZE_1;
 					break;
 
-				case PARSER_SIZE_1:
+			case PARSER_SIZE_1:
 					if (byte < (uint8_t)'0' || byte > (uint8_t)'9') {
+						_clearMessage(&message);
 						parser_state = PARSER_IDLE;
 						break;
 					}
@@ -149,6 +151,7 @@ static void task_rx_parser(void *parameters)
 					message.frame.payload_size[1] = byte;
 					if (!PROTOCOL_payloadSizeToUint8(message.frame.payload_size, &payload_size) ||
 						payload_size > PAYLOAD_MAX_SIZE) {
+						_clearMessage(&message);
 						parser_state = PARSER_IDLE;
 						break;
 					}
@@ -156,6 +159,7 @@ static void task_rx_parser(void *parameters)
 					payload_index = 0U;
 					if (payload_size == 0U) {
 						(void)_dispatch(uartDispatcher, &message);
+						_clearMessage(&message);
 						parser_state = PARSER_IDLE;
 					} else {
 						parser_state = PARSER_PAYLOAD;
@@ -166,16 +170,23 @@ static void task_rx_parser(void *parameters)
 					message.frame.payload[payload_index++] = byte;
 					if (payload_index == payload_size) {
 						(void)_dispatch(uartDispatcher, &message);
+						_clearMessage(&message);
 						parser_state = PARSER_IDLE;
 					}
 					break;
 
-				default:
+			default:
+					_clearMessage(&message);
 					parser_state = PARSER_IDLE;
 					break;
 			}
 		}
 	}
+}
+
+static void _clearMessage(protocolData_u *message)
+{
+	memset(message, 0, sizeof(*message));
 }
 
 static bool _dispatch(uart_dispatcher_t *uartDispatcher,
