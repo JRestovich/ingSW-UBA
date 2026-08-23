@@ -19,12 +19,10 @@ struct uart_driver {
 	QueueHandle_t	queue_tx;
 
 	TaskHandle_t	task_rx;
-	QueueHandle_t	queue_rx;
-
-	uint8_t				ring_storage[UART_RX_RING_BUFFER_LEN];
-	ring_buffer_t 		ring_rx;
-	SemaphoreHandle_t	sem_rx_byte_avail;
-	uint8_t				rx_buffer[UART_RX_RING_BUFFER_LEN];
+	uint8_t				rx_stream_storage[UART_RX_STREAM_BUFFER_LEN];
+	StaticStreamBuffer_t	rx_stream_control;
+	StreamBufferHandle_t	rx_stream;
+	uint8_t				rx_buffer[UART_RX_CHUNK_LEN];
 	volatile uint16_t	rx_size;
 
 	/* binary semaphores signaled from the ISR */
@@ -74,13 +72,12 @@ static bool _open(uart_driver_t *uartDriver, uart_num uartNum) {
     }
 	vQueueAddToRegistry(uartDriver->queue_tx, "Task UART Tx Queue Handle");
 
-	ring_buffer_init(&uartDriver->ring_rx, (char*)uartDriver->ring_storage, UART_RX_RING_BUFFER_LEN);
-
-	uartDriver->sem_rx_byte_avail = xSemaphoreCreateCounting((UART_RX_RING_BUFFER_LEN - 1), 0ul);
-	if (NULL == uartDriver->sem_rx_byte_avail) {
-    	return false;
-    }
-	vQueueAddToRegistry(uartDriver->sem_rx_byte_avail, "Task UART byte available semaphore");
+	uartDriver->rx_stream = xStreamBufferCreateStatic(
+		UART_RX_STREAM_BUFFER_LEN, 1U, uartDriver->rx_stream_storage,
+		&uartDriver->rx_stream_control);
+	if (uartDriver->rx_stream == NULL) {
+		return false;
+	}
 
 	uartDriver->sem_tx_cplt_cb = xSemaphoreCreateBinary();
 	if (NULL == uartDriver->sem_tx_cplt_cb) {
@@ -146,23 +143,13 @@ bool UARTCOMM_sendAsync(uart_driver_t *uartDriver, const uint8_t *pData, uint16_
     return true;
 }
 
-bool UARTCOMM_readAsync(uart_driver_t *uartDriver, uint8_t *pData, uint16_t size)
+StreamBufferHandle_t UARTCOMM_getRxStream(const uart_driver_t *uartDriver)
 {
-    uint16_t received = 0U;
-
-    if (uartDriver == NULL || !uartDriver->ready || pData == NULL || size == 0U) {
-        return false;
+    if (uartDriver == NULL || !uartDriver->ready) {
+        return NULL;
     }
 
-    while (received < size &&
-           xSemaphoreTake(uartDriver->sem_rx_byte_avail, 0U) == pdPASS) {
-        if (!ring_buffer_dequeue(&uartDriver->ring_rx, (char *)&pData[received])) {
-            break;
-        }
-        received++;
-    }
-
-    return received > 0U;
+    return uartDriver->rx_stream;
 }
 
 /* Task UART TX thread */
@@ -203,11 +190,7 @@ static void task_uart_rx(void *parameters)
 
 		xSemaphoreTake(uartDriver->sem_rx_cplt_cb, portMAX_DELAY);
 		size = uartDriver->rx_size;
-		ring_buffer_queue_arr(&uartDriver->ring_rx,
-							  (const char *)uartDriver->rx_buffer, size);
-		for (uint16_t i = 0U; i < size; i++) {
-			(void)xSemaphoreGive(uartDriver->sem_rx_byte_avail);
-		}
+		(void)xStreamBufferSend(uartDriver->rx_stream, uartDriver->rx_buffer, size, 0U);
 
 		if (!UART_readAsync(uartDriver->uartInterface, uartDriver->rx_buffer,
 							 sizeof(uartDriver->rx_buffer))) {

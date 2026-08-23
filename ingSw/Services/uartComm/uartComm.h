@@ -16,17 +16,18 @@ extern "C" {
 #include <stdbool.h>
 #include <stdint.h>
 #include "uart.h"
-#include "ring_buffer.h"
 
 #include "FreeRTOS.h"
 #include "task.h"
 #include "uart.h"
 #include "queue.h"
 #include "semphr.h"
+#include "stream_buffer.h"
 
 /* Private includes ----------------------------------------------------------*/
 
-#define UART_RX_RING_BUFFER_LEN 64
+#define UART_RX_CHUNK_LEN         64U
+#define UART_RX_STREAM_BUFFER_LEN 256U
 #define UART_TX_MAX_PAYLOAD      64U
 
 typedef struct uart_driver uart_driver_t;
@@ -43,7 +44,7 @@ void UARTCOMM_close(uart_driver_t *uartDriver);
 
 bool UARTCOMM_sendAsync(uart_driver_t *uartDriver, const uint8_t *pData, uint16_t size);
 
-bool UARTCOMM_readAsync(uart_driver_t *uartDriver, uint8_t *pData, uint16_t size);
+StreamBufferHandle_t UARTCOMM_getRxStream(const uart_driver_t *uartDriver);
 
 #ifdef __cplusplus
 }
