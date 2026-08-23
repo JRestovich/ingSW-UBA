@@ -26,11 +26,12 @@ extern "C" {
 #define PROTOCOL_START_BYTE '!'
 
 typedef enum {
+    SUBSYSTEM_NONE = '0' - 1,
     SUBSYSTEM_COMM_TEST = '0',
     SUBSYSTEM_LED_RGB,
     SUBSYSTEM_LOGIC,
     SUBSYSTEM_PARSER,
-    SUBSYSTEM_QTY
+    SUBSYSTEM_END
 } subsystem_e;
 
 typedef struct
@@ -60,6 +61,12 @@ static inline bool PROTOCOL_payloadSizeToUint8(
     *size = (uint8_t)(((payload_size[0] - (uint8_t)'0') * 10U) +
                       (payload_size[1] - (uint8_t)'0'));
     return true;
+}
+
+static inline bool PROTOCOL_isValidSubsystem(uint8_t subsystem)
+{
+    return subsystem > (uint8_t)SUBSYSTEM_NONE &&
+           subsystem < (uint8_t)SUBSYSTEM_END;
 }
 
 typedef struct

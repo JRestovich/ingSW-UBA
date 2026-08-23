@@ -17,6 +17,7 @@ static bool _open(uart_dispatcher_t *uartDispatcher, uart_num uartNum);
 static bool _dispatch(uart_dispatcher_t *uartDispatcher,
                       const protocolData_u *message);
 static void _clearMessage(protocolData_u *message);
+static void _initSubscribers(uart_dispatcher_t *uartDispatcher);
 
 struct uart_dispatcher {
 	bool ready;
@@ -27,7 +28,6 @@ struct uart_dispatcher {
 	StreamBufferHandle_t rx_stream;
 
 	subscriber_t subscribers[MAX_SUBSCRIBER_QTY];
-	uint8_t subscriber_count;
 };
 
 static uart_dispatcher_t uartDispatchers[UART_COUNT] = {0};
@@ -61,8 +61,7 @@ static bool _open(uart_dispatcher_t *uartDispatcher, uart_num uartNum)
 		return false;
 	}
 
-	uartDispatcher->subscriber_count = 0U;
-	memset(uartDispatcher->subscribers, 0, sizeof(uartDispatcher->subscribers));
+	_initSubscribers(uartDispatcher);
 
 	BaseType_t ret = xTaskCreate(task_rx_parser, "Task Rx Parser", (configMINIMAL_STACK_SIZE),
     				  (void *)uartDispatcher,
@@ -92,8 +91,7 @@ void UARTDISPATCHER_close(uart_dispatcher_t *uartDispatcher)
 	uartComm = uartDispatcher->uartComm;
 	uartDispatcher->rx_stream = NULL;
 	uartDispatcher->uartComm = NULL;
-	uartDispatcher->subscriber_count = 0U;
-	memset(uartDispatcher->subscribers, 0, sizeof(uartDispatcher->subscribers));
+	_initSubscribers(uartDispatcher);
 
 	UARTCOMM_close(uartComm);
 }
@@ -189,17 +187,25 @@ static void _clearMessage(protocolData_u *message)
 	memset(message, 0, sizeof(*message));
 }
 
+static void _initSubscribers(uart_dispatcher_t *uartDispatcher)
+{
+	for (uint8_t index = 0U; index < MAX_SUBSCRIBER_QTY; index++) {
+		uartDispatcher->subscribers[index].subsystem = SUBSYSTEM_NONE;
+		uartDispatcher->subscribers[index].queue_sub = NULL;
+	}
+}
+
 static bool _dispatch(uart_dispatcher_t *uartDispatcher,
                       const protocolData_u *message)
 {
 	bool delivered = false;
 
 	if (uartDispatcher == NULL || message == NULL ||
-		message->frame.subsystem >= SUBSYSTEM_QTY) {
+		!PROTOCOL_isValidSubsystem(message->frame.subsystem)) {
 		return false;
 	}
 
-	for (uint8_t index = 0U; index < uartDispatcher->subscriber_count; index++) {
+	for (uint8_t index = 0U; index < MAX_SUBSCRIBER_QTY; index++) {
 		subscriber_t *subscriber = &uartDispatcher->subscribers[index];
 
 		if (subscriber->subsystem != (subsystem_e)message->frame.subsystem ||
@@ -238,19 +244,55 @@ bool UARTDISPATCHER_sendAsync(uart_dispatcher_t *uartDispatcher,
 bool UARTDISPATCHER_subscribe(uart_dispatcher_t *uartDispatcher,
 							  const subscriber_t *subscriber)
 {
+	uint8_t available_index = MAX_SUBSCRIBER_QTY;
+
 	if (uartDispatcher == NULL || !uartDispatcher->ready || subscriber == NULL ||
-		subscriber->queue_sub == NULL || subscriber->subsystem > SUBSYSTEM_PARSER ||
-		uartDispatcher->subscriber_count >= MAX_SUBSCRIBER_QTY) {
+		subscriber->queue_sub == NULL ||
+		!PROTOCOL_isValidSubsystem((uint8_t)subscriber->subsystem)) {
 		return false;
 	}
 
-	for (uint8_t index = 0U; index < uartDispatcher->subscriber_count; index++) {
+	for (uint8_t index = 0U; index < MAX_SUBSCRIBER_QTY; index++) {
+		// Find the fisrt available slot
+		if (uartDispatcher->subscribers[index].subsystem == SUBSYSTEM_NONE &&
+			uartDispatcher->subscribers[index].queue_sub == NULL) {
+			available_index = index;
+			continue;
+		}
+
+		// Avoid repeated subscribers
 		if (uartDispatcher->subscribers[index].subsystem == subscriber->subsystem &&
 			uartDispatcher->subscribers[index].queue_sub == subscriber->queue_sub) {
 			return false;
 		}
 	}
 
-	uartDispatcher->subscribers[uartDispatcher->subscriber_count++] = *subscriber;
+	if (available_index >= MAX_SUBSCRIBER_QTY) {
+		return false;
+	}
+
+	uartDispatcher->subscribers[available_index] = *subscriber;
 	return true;
+}
+
+bool UARTDISPATCHER_unsubscribe(uart_dispatcher_t *uartDispatcher,
+                              const subscriber_t *subscriber)
+{
+	if (uartDispatcher == NULL || !uartDispatcher->ready || subscriber == NULL ||
+		subscriber->queue_sub == NULL ||
+		!PROTOCOL_isValidSubsystem((uint8_t)subscriber->subsystem)) {
+		return false;
+	}
+
+	for (uint8_t index = 0U; index < MAX_SUBSCRIBER_QTY; index++) {
+		if (uartDispatcher->subscribers[index].subsystem == subscriber->subsystem &&
+			uartDispatcher->subscribers[index].queue_sub == subscriber->queue_sub) {
+				
+			uartDispatcher->subscribers[index].subsystem = SUBSYSTEM_NONE;
+			uartDispatcher->subscribers[index].queue_sub = NULL;
+			return true;
+		}
+	}
+
+	return false;
 }

@@ -39,6 +39,9 @@ bool UARTDISPATCHER_sendAsync(uart_dispatcher_t *uartDispatcher,
 bool UARTDISPATCHER_subscribe(uart_dispatcher_t *uartDispatcher,
                               const subscriber_t *subscriber);
 
+bool UARTDISPATCHER_unsubscribe(uart_dispatcher_t *uartDispatcher,
+                              const subscriber_t *subscriber);
+
 #ifdef __cplusplus
 }
 #endif
