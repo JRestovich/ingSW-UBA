@@ -121,7 +121,38 @@ static bool _open(uart_driver_t *uartDriver, uart_num uartNum) {
 
 void UARTCOMM_close(uart_driver_t *uartDriver)
 {
-    (void)uartDriver;
+	if (uartDriver == NULL || !uartDriver->ready) {
+		return;
+	}
+
+	(void)UART_setRxCallback(uartDriver->uartInterface, NULL, NULL);
+	(void)UART_setTxCallback(uartDriver->uartInterface, NULL, NULL);
+	uartDriver->ready = false;
+
+	if (uartDriver->task_rx != NULL) {
+		vTaskDelete(uartDriver->task_rx);
+		uartDriver->task_rx = NULL;
+	}
+	if (uartDriver->task_tx != NULL) {
+		vTaskDelete(uartDriver->task_tx);
+		uartDriver->task_tx = NULL;
+	}
+	if (uartDriver->queue_tx != NULL) {
+		vQueueDelete(uartDriver->queue_tx);
+		uartDriver->queue_tx = NULL;
+	}
+	if (uartDriver->sem_tx_cplt_cb != NULL) {
+		vSemaphoreDelete(uartDriver->sem_tx_cplt_cb);
+		uartDriver->sem_tx_cplt_cb = NULL;
+	}
+	if (uartDriver->sem_rx_cplt_cb != NULL) {
+		vSemaphoreDelete(uartDriver->sem_rx_cplt_cb);
+		uartDriver->sem_rx_cplt_cb = NULL;
+	}
+
+	uartDriver->rx_stream = NULL;
+	uartDriver->rx_size = 0U;
+	uartDriver->uartInterface = NULL;
 }
 
 bool UARTCOMM_sendAsync(uart_driver_t *uartDriver, const uint8_t *pData, uint16_t size)
@@ -178,10 +209,10 @@ static void task_uart_rx(void *parameters)
 {
 	uart_driver_t *uartDriver = (uart_driver_t*)parameters;
 
-    if (!UART_readAsync(uartDriver->uartInterface, uartDriver->rx_buffer,
-                        sizeof(uartDriver->rx_buffer))) {
-        vTaskDelete(NULL);
-    }
+	while (!UART_readAsync(uartDriver->uartInterface, uartDriver->rx_buffer,
+									 sizeof(uartDriver->rx_buffer))) {
+		vTaskDelay(pdMS_TO_TICKS(1U));
+	}
 
 	/* As per most tasks, this task is implemented in an infinite loop. */
 	for (;;)
@@ -192,8 +223,8 @@ static void task_uart_rx(void *parameters)
 		size = uartDriver->rx_size;
 		(void)xStreamBufferSend(uartDriver->rx_stream, uartDriver->rx_buffer, size, 0U);
 
-		if (!UART_readAsync(uartDriver->uartInterface, uartDriver->rx_buffer,
-							 sizeof(uartDriver->rx_buffer))) {
+		while (!UART_readAsync(uartDriver->uartInterface, uartDriver->rx_buffer,
+									 sizeof(uartDriver->rx_buffer))) {
 			vTaskDelay(pdMS_TO_TICKS(1U));
 		}
 	}
