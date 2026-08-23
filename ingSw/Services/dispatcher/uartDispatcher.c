@@ -253,14 +253,16 @@ bool UARTDISPATCHER_subscribe(uart_dispatcher_t *uartDispatcher,
 	}
 
 	for (uint8_t index = 0U; index < MAX_SUBSCRIBER_QTY; index++) {
-		// Find the fisrt available slot
+		// Keep the first available slot while checking for duplicates.
 		if (uartDispatcher->subscribers[index].subsystem == SUBSYSTEM_NONE &&
 			uartDispatcher->subscribers[index].queue_sub == NULL) {
-			available_index = index;
+			if (available_index == MAX_SUBSCRIBER_QTY) {
+				available_index = index;
+			}
 			continue;
 		}
 
-		// Avoid repeated subscribers
+		// Avoid repeated subscribers.
 		if (uartDispatcher->subscribers[index].subsystem == subscriber->subsystem &&
 			uartDispatcher->subscribers[index].queue_sub == subscriber->queue_sub) {
 			return false;
