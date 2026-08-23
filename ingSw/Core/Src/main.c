@@ -25,6 +25,7 @@
 #include "ledRgb.h"
 #include "task.h"
 #include "uartDispatcher.h"
+#include "queue.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -34,6 +35,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define UART_LED_RGB_QUEUE_LEN 4U
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -67,6 +70,8 @@ static colorSequence rgb_sequence = {
 static ledRgb rgb_led;
 
 static uart_dispatcher_t *uart_dispatcher;
+static QueueHandle_t led_rgb_queue;
+static protocolData_u led_rgb_message;
 
 /* USER CODE END PV */
 
@@ -134,7 +139,17 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_QUEUES */
   uart_dispatcher = UARTDISPATCHER_get(UART_2);
-  if (uart_dispatcher == NULL)
+  led_rgb_queue = xQueueCreate(UART_LED_RGB_QUEUE_LEN, sizeof(protocolData_u));
+  if (uart_dispatcher == NULL || led_rgb_queue == NULL)
+  {
+    Error_Handler();
+  }
+
+  const subscriber_t led_rgb_subscriber = {
+    .subsystem = SUBSYSTEM_LED_RGB,
+    .queue_sub = led_rgb_queue,
+  };
+  if (!UARTDISPATCHER_subscribe(uart_dispatcher, &led_rgb_subscriber))
   {
     Error_Handler();
   }
@@ -356,6 +371,8 @@ void StartDefaultTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
+	BaseType_t hola = xQueueReceive(led_rgb_queue, &led_rgb_message, portMAX_DELAY);
+
     if (!LED_RGB_nextStep(&rgb_led, true))
     {
       Error_Handler();
