@@ -123,11 +123,11 @@ bool LED_RGB_setColorSequence(ledRgb *self, colorSequence *colSeq) {
     return true;
 }
 
-bool LED_RGB_nextStep(ledRgb *self, bool cyclic) {
+bool LED_RGB_setColor(ledRgb *self, uint8_t index) {
     const ledRgbConfig_t *config;
 
     if (!self || !self->valid || !self->pwm || !self->colorSeq ||
-        !self->colorSeq->seq || self->colorSeq->stepQty == 0) {
+        !self->colorSeq->seq || index >= self->colorSeq->stepQty) {
         return false;
     }
 
@@ -136,13 +136,7 @@ bool LED_RGB_nextStep(ledRgb *self, bool cyclic) {
         return false;
     }
 
-    self->colorSeq->index++;
-    if (self->colorSeq->index >= self->colorSeq->stepQty) {
-        if (!cyclic) {
-            return LED_RGB_stop(self);
-        }
-        self->colorSeq->index = 0;
-    }
+    self->colorSeq->index = index;
 
     color_s color = self->colorSeq->seq[self->colorSeq->index].color;
 
@@ -156,6 +150,25 @@ bool LED_RGB_nextStep(ledRgb *self, bool cyclic) {
     }
 
     return ok;
+}
+
+bool LED_RGB_nextStep(ledRgb *self, bool cyclic) {
+    uint8_t index;
+
+    if (!self || !self->valid || !self->pwm || !self->colorSeq ||
+        !self->colorSeq->seq || self->colorSeq->stepQty == 0) {
+        return false;
+    }
+
+    index = self->colorSeq->index + 1U;
+    if (index >= self->colorSeq->stepQty) {
+        if (!cyclic) {
+            return LED_RGB_stop(self);
+        }
+        index = 0U;
+    }
+
+    return LED_RGB_setColor(self, index);
 }
 
 static const ledRgbConfig_t *_getConfig(ledRgb_id id) {

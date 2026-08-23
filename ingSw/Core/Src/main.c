@@ -56,9 +56,9 @@ const osThreadAttr_t defaultTask_attributes = {
 };
 /* USER CODE BEGIN PV */
 static colorStep_t rgb_steps[] = {
-  { .color = { 33, 33, 33 }, .timeout_ms = 2000 },
-  { .color = { 66, 66, 66 }, .timeout_ms = 1000 },
-  { .color = { 0, 50, 100 }, .timeout_ms = 1000 },
+  { .color = { 0, 0, 0 }, .timeout_ms = 3000 },
+  { .color = { 66, 66, 66 }, .timeout_ms = 3000 },
+  { .color = { 100, 100, 100 }, .timeout_ms = 3000 },
 };
 
 static colorSequence rgb_sequence = {
