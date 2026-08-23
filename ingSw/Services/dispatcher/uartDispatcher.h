@@ -34,7 +34,7 @@ uart_dispatcher_t *UARTDISPATCHER_get(uart_num uartNum);
 void UARTDISPATCHER_close(uart_dispatcher_t *uartDispatcher);
 
 bool UARTDISPATCHER_sendAsync(uart_dispatcher_t *uartDispatcher,
-                              const protocol_msg_t *message);
+                              const protocolData_u *message);
 
 bool UARTDISPATCHER_subscribe(uart_dispatcher_t *uartDispatcher,
                               const subscriber_t *subscriber);
