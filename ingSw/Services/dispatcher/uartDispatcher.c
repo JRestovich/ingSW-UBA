@@ -63,9 +63,34 @@ static bool _open(uart_dispatcher_t *uartDispatcher, uart_num uartNum)
 	return true;
 }
 
+void UARTDISPATCHER_close(uart_dispatcher_t *uartDispatcher)
+{
+	uart_driver_t *uartComm;
+
+	if (uartDispatcher == NULL || !uartDispatcher->ready) {
+		return;
+	}
+
+	uartDispatcher->ready = false;
+	if (uartDispatcher->task_parser != NULL) {
+		vTaskDelete(uartDispatcher->task_parser);
+		uartDispatcher->task_parser = NULL;
+	}
+
+	uartComm = uartDispatcher->uartComm;
+	uartDispatcher->rx_stream = NULL;
+	uartDispatcher->uartComm = NULL;
+	uartDispatcher->subscriber_count = 0U;
+	memset(uartDispatcher->subscribers, 0, sizeof(uartDispatcher->subscribers));
+
+	UARTCOMM_close(uartComm);
+}
 
 static void task_rx_parser(void *parameters)
 {
-	// todo
+	(void)parameters;
+
+	for (;;) {
+	}
 
 }
