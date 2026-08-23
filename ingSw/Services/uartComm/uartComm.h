@@ -27,13 +27,14 @@ extern "C" {
 /* Private includes ----------------------------------------------------------*/
 
 #define UART_RX_RING_BUFFER_LEN 64
+#define UART_TX_MAX_PAYLOAD      64U
 
 typedef struct uart_driver uart_driver_t;
 
 typedef struct
 {
-	uint8_t	*p_data;	/* pointer to spooler buffer */
-	size_t	length;		/* payload length in bytes */
+	uint8_t	data[UART_TX_MAX_PAYLOAD];
+	uint16_t length;
 } uart_msg_t;
 
 uart_driver_t* UARTCOMM_get(uart_num uartNum);

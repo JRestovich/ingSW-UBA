@@ -10,7 +10,7 @@ static void UART_txCompleteCallback(void *context);
 static void task_uart_rx(void *parameters);
 static void task_uart_tx(void *parameters);
 
-typedef struct {
+struct uart_driver {
 	bool ready;
 	uart_num	id;
     uart_t  *uartInterface;
@@ -30,7 +30,7 @@ typedef struct {
 	/* binary semaphores signaled from the ISR */
 	SemaphoreHandle_t	sem_tx_cplt_cb;
 	SemaphoreHandle_t	sem_rx_cplt_cb;
-} uart_driver;
+};
 
 static uart_driver_t uartDrivers[UART_COUNT] = {0};
 
@@ -129,21 +129,17 @@ void UARTCOMM_close(uart_driver_t *uartDriver)
 
 bool UARTCOMM_sendAsync(uart_driver_t *uartDriver, const uint8_t *pData, uint16_t size)
 {
-    uart_msg_t message;
+    uart_msg_t message = {0};
 
-    if (uartDriver == NULL || !uartDriver->ready || pData == NULL || size == 0U) {
+    if (uartDriver == NULL || !uartDriver->ready || pData == NULL || size == 0U ||
+        size > UART_TX_MAX_PAYLOAD) {
         return false;
     }
 
-    message.p_data = pvPortMalloc(size);
-    if (message.p_data == NULL) {
-        return false;
-    }
-    memcpy(message.p_data, pData, size);
+    memcpy(message.data, pData, size);
     message.length = size;
 
     if (xQueueSend(uartDriver->queue_tx, &message, 0U) != pdPASS) {
-        vPortFree(message.p_data);
         return false;
     }
 
@@ -180,15 +176,13 @@ static void task_uart_tx(void *parameters)
 	{
 		xQueueReceive(uartDriver->queue_tx, &uart_msg, portMAX_DELAY);
 
-        bool ret = UART_sendAsync(uartDriver->uartInterface, uart_msg.p_data, uart_msg.length);
+        bool ret = UART_sendAsync(uartDriver->uartInterface, uart_msg.data, uart_msg.length);
 
 		if(!ret) {
-			vPortFree(uart_msg.p_data);
 			continue;
 		}
 
 		xSemaphoreTake(uartDriver->sem_tx_cplt_cb, portMAX_DELAY);
-		vPortFree(uart_msg.p_data);
 	}
 }
 
