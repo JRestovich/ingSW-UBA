@@ -195,7 +195,7 @@ static bool _dispatch(uart_dispatcher_t *uartDispatcher,
 	bool delivered = false;
 
 	if (uartDispatcher == NULL || message == NULL ||
-		message->frame.subsystem > SUBSYSTEM_PARSER) {
+		message->frame.subsystem >= SUBSYSTEM_QTY) {
 		return false;
 	}
 
@@ -210,6 +210,10 @@ static bool _dispatch(uart_dispatcher_t *uartDispatcher,
 		if (xQueueSend(subscriber->queue_sub, message, 0U) == pdPASS) {
 			delivered = true;
 		}
+	}
+
+	if (message->frame.subsystem == SUBSYSTEM_COMM_TEST) {
+		UARTDISPATCHER_sendAsync(uartDispatcher, message);
 	}
 
 	return delivered;

@@ -26,9 +26,11 @@ extern "C" {
 #define PROTOCOL_START_BYTE '!'
 
 typedef enum {
+    SUBSYSTEM_COMM_TEST = '0',
     SUBSYSTEM_LED_RGB,
     SUBSYSTEM_LOGIC,
-    SUBSYSTEM_PARSER
+    SUBSYSTEM_PARSER,
+    SUBSYSTEM_QTY
 } subsystem_e;
 
 typedef struct
