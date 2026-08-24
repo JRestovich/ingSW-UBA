@@ -63,9 +63,89 @@ void APP_init(app_t *app)
         // ERROR
         return;
     }
+    
+    if (!UARTDISPATCHER_subscribe(app->uartDispatcher, &app->appSubscriber))
+    {
+        // ERROR
+        return;
+    }
 }
 
 static void appTaskHandler(void *parameters)
 {
-    (void)parameters;
+    app_t *app = parameters;
+    protocolData_u data = {0};
+
+    if (app == NULL || app->appQueue == NULL)
+    {
+        vTaskDelete(NULL);
+        return;
+    }
+
+    for (;;)
+    {
+        if (xQueueReceive(app->appQueue, &data, portMAX_DELAY) != pdPASS)
+        {
+            continue;
+        }
+
+        switch (app->state)
+        {
+            case APP_NORMAL:
+                if (data.frame.cmd == APP_CMD_NEXT_STATE)
+                {
+                    app->state = APP_PET_LOST;
+                }
+                else if (data.frame.cmd == APP_CMD_PREVIOUS_STATE)
+                {
+                    app->state = APP_CONNECTION_LOST;
+                }
+                else if (data.frame.cmd == APP_CMD_ERROR)
+                {
+                    app->state = APP_ERROR;
+                }
+                break;
+
+            case APP_PET_LOST:
+                if (data.frame.cmd == APP_CMD_NEXT_STATE)
+                {
+                    app->state = APP_CONNECTION_LOST;
+                }
+                else if (data.frame.cmd == APP_CMD_PREVIOUS_STATE)
+                {
+                    app->state = APP_NORMAL;
+                }
+                else if (data.frame.cmd == APP_CMD_ERROR)
+                {
+                    app->state = APP_ERROR;
+                }
+                break;
+
+            case APP_CONNECTION_LOST:
+                if (data.frame.cmd == APP_CMD_NEXT_STATE)
+                {
+                    app->state = APP_NORMAL;
+                }
+                else if (data.frame.cmd == APP_CMD_PREVIOUS_STATE)
+                {
+                    app->state = APP_PET_LOST;
+                }
+                else if (data.frame.cmd == APP_CMD_ERROR)
+                {
+                    app->state = APP_ERROR;
+                }
+                break;
+
+            case APP_ERROR:
+                if (data.frame.cmd == APP_CMD_RECOVERY)
+                {
+                    app->state = APP_NORMAL;
+                }
+                break;
+
+            default:
+                app->state = APP_ERROR;
+                break;
+        }
+    }
 }

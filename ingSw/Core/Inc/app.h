@@ -28,7 +28,9 @@ typedef enum {
 
 typedef enum {
     APP_CMD_NEXT_STATE = 'N',
-    APP_CMD_PREVIOUS_STATE = 'P'
+    APP_CMD_PREVIOUS_STATE = 'P',
+    APP_CMD_ERROR = 'E',
+    APP_CMD_RECOVERY = 'R'
 } appCommand_t;
 
 typedef struct
