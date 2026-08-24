@@ -22,22 +22,13 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "ledRgb.h"
-#include "task.h"
-#include "uartDispatcher.h"
-#include "queue.h"
+#include "app.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 
 /* USER CODE END PTD */
-
-/* Private define ------------------------------------------------------------*/
-/* USER CODE BEGIN PD */
-#define UART_LED_RGB_QUEUE_LEN 4U
-
-/* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
@@ -47,31 +38,8 @@
 /* Private variables ---------------------------------------------------------*/
 TIM_HandleTypeDef htim1;
 
-/* Definitions for defaultTask */
-osThreadId_t defaultTaskHandle;
-const osThreadAttr_t defaultTask_attributes = {
-  .name = "defaultTask",
-  .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityNormal,
-};
 /* USER CODE BEGIN PV */
-static colorStep_t rgb_steps[] = {
-  { .color = { 0, 0, 0 }, .timeout_ms = 3000 },
-  { .color = { 66, 66, 66 }, .timeout_ms = 3000 },
-  { .color = { 100, 100, 100 }, .timeout_ms = 3000 },
-};
-
-static colorSequence rgb_sequence = {
-  .seq = rgb_steps,
-  .stepQty = sizeof(rgb_steps) / sizeof(rgb_steps[0]),
-  .index = 0,
-};
-
-static ledRgb rgb_led;
-
-static uart_dispatcher_t *uart_dispatcher;
-static QueueHandle_t led_rgb_queue;
-static protocolData_u led_rgb_message;
+static app_t app;
 
 /* USER CODE END PV */
 
@@ -79,7 +47,6 @@ static protocolData_u led_rgb_message;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_TIM1_Init(void);
-void StartDefaultTask(void *argument);
 
 /* USER CODE BEGIN PFP */
 /* USER CODE END PFP */
@@ -138,28 +105,10 @@ int main(void)
   /* USER CODE END RTOS_TIMERS */
 
   /* USER CODE BEGIN RTOS_QUEUES */
-  uart_dispatcher = UARTDISPATCHER_get(UART_2);
-  led_rgb_queue = xQueueCreate(UART_LED_RGB_QUEUE_LEN, sizeof(protocolData_u));
-  if (uart_dispatcher == NULL || led_rgb_queue == NULL)
-  {
-    Error_Handler();
-  }
-
-  const subscriber_t led_rgb_subscriber = {
-    .subsystem = SUBSYSTEM_LED_RGB,
-    .queue_sub = led_rgb_queue,
-  };
-  if (!UARTDISPATCHER_subscribe(uart_dispatcher, &led_rgb_subscriber))
-  {
-    Error_Handler();
-  }
   /* USER CODE END RTOS_QUEUES */
 
-  /* Create the thread(s) */
-  /* creation of defaultTask */
-  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
-
   /* USER CODE BEGIN RTOS_THREADS */
+  APP_init(&app);
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
@@ -173,9 +122,6 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-
-  /* LED_RGB_nextStep avanza el índice antes de mostrar el color. */
-  rgb_sequence.index = rgb_sequence.stepQty - 1U;
 
   while (1)
   {
@@ -350,37 +296,6 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 
 /* USER CODE END 4 */
-
-/* USER CODE BEGIN Header_StartDefaultTask */
-/**
-  * @brief  Function implementing the defaultTask thread.
-  * @param  argument: Not used
-  * @retval None
-  */
-/* USER CODE END Header_StartDefaultTask */
-void StartDefaultTask(void *argument)
-{
-  /* USER CODE BEGIN 5 */
-  if (!LED_RGB_ctor(&rgb_led, LED_RGB_STATUS_1, &rgb_sequence,
-                    LED_RGB_COMMON_CATHODE) ||
-      !LED_RGB_init(&rgb_led) ||
-      !LED_RGB_start(&rgb_led))
-  {
-    Error_Handler();
-  }
-  /* Infinite loop */
-  for(;;)
-  {
-	BaseType_t hola = xQueueReceive(led_rgb_queue, &led_rgb_message, portMAX_DELAY);
-
-    if (!LED_RGB_nextStep(&rgb_led, true))
-    {
-      Error_Handler();
-    }
-    vTaskDelay(pdMS_TO_TICKS(rgb_sequence.seq[rgb_sequence.index].timeout_ms));
-  }
-  /* USER CODE END 5 */
-}
 
 /**
   * @brief  This function is executed in case of error occurrence.
