@@ -1,20 +1,10 @@
 #include "app.h"
+#include "colors.h"
 
 #define APP_QUEUE_SIZE 5
 
 static void appTaskHandler(void *parameters);
-
-static colorStep_t rgb_steps[] = {
-  { .color = { 0, 0, 0 }, .timeout_ms = 3000 },
-  { .color = { 66, 66, 66 }, .timeout_ms = 3000 },
-  { .color = { 100, 100, 100 }, .timeout_ms = 3000 },
-};
-
-static colorSequence rgb_sequence = {
-  .seq = rgb_steps,
-  .stepQty = sizeof(rgb_steps) / sizeof(rgb_steps[0]),
-  .index = 0,
-};
+static void appApplyStateSequence(app_t *app);
 
 void APP_init(app_t *app)
 {
@@ -32,8 +22,10 @@ void APP_init(app_t *app)
 
     led_ao_open(&app->statusLed,
                 LED_RGB_STATUS_1,
-                &rgb_sequence,
+                &app_normal_sequence,
                 LED_RGB_COMMON_CATHODE);
+
+    appApplyStateSequence(app);
 
     app->uartDispatcher = UARTDISPATCHER_get(UART_2);
     if (app->uartDispatcher == NULL)
@@ -84,10 +76,14 @@ static void appTaskHandler(void *parameters)
 
     for (;;)
     {
+        appState previousState;
+
         if (xQueueReceive(app->appQueue, &data, portMAX_DELAY) != pdPASS)
         {
             continue;
         }
+
+        previousState = app->state;
 
         switch (app->state)
         {
@@ -147,5 +143,47 @@ static void appTaskHandler(void *parameters)
                 app->state = APP_ERROR;
                 break;
         }
+
+        if (app->state != previousState)
+        {
+            appApplyStateSequence(app);
+        }
     }
+}
+
+static void appApplyStateSequence(app_t *app)
+{
+    colorSequence *sequence;
+    const led_ev_t event = EV_LED_BLINK;
+
+    if (app == NULL)
+    {
+        return;
+    }
+
+    switch (app->state)
+    {
+        case APP_NORMAL:
+            sequence = &app_normal_sequence;
+            break;
+
+        case APP_PET_LOST:
+            sequence = &app_pet_lost_sequence;
+            break;
+
+        case APP_CONNECTION_LOST:
+            sequence = &app_connection_lost_sequence;
+            break;
+
+        case APP_ERROR:
+        default:
+            sequence = &app_error_sequence;
+            break;
+    }
+
+    taskENTER_CRITICAL();
+    (void)LED_RGB_setColorSequence(&app->statusLed.led, sequence);
+    taskEXIT_CRITICAL();
+
+    (void)led_ao_send(&app->statusLed, &event);
 }
