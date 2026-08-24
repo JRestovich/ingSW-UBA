@@ -1,10 +1,13 @@
 #include "app.h"
 #include "colors.h"
+#include <string.h>
 
 #define APP_QUEUE_SIZE 5
 
 static void appTaskHandler(void *parameters);
 static void appApplyStateSequence(app_t *app);
+static void appSendStateResponse(const app_t *app);
+static const char *appStateName(appState state);
 
 void APP_init(app_t *app)
 {
@@ -23,7 +26,7 @@ void APP_init(app_t *app)
     led_ao_open(&app->statusLed,
                 LED_RGB_STATUS_1,
                 &app_normal_sequence,
-                LED_RGB_COMMON_CATHODE);
+                LED_RGB_COMMON_ANODE);
 
     appApplyStateSequence(app);
 
@@ -147,6 +150,7 @@ static void appTaskHandler(void *parameters)
         if (app->state != previousState)
         {
             appApplyStateSequence(app);
+            appSendStateResponse(app);
         }
     }
 }
@@ -182,8 +186,54 @@ static void appApplyStateSequence(app_t *app)
     }
 
     taskENTER_CRITICAL();
-    (void)LED_RGB_setColorSequence(&app->statusLed.led, sequence);
+    if (LED_RGB_setColorSequence(&app->statusLed.led, sequence))
+    {
+        (void)LED_RGB_setColor(&app->statusLed.led, 0U);
+    }
     taskEXIT_CRITICAL();
 
     (void)led_ao_send(&app->statusLed, &event);
+}
+
+static void appSendStateResponse(const app_t *app)
+{
+    protocolData_u response = {0};
+    const char *stateName;
+    size_t stateNameLength;
+
+    if (app == NULL || app->uartDispatcher == NULL)
+    {
+        return;
+    }
+
+    stateName = appStateName(app->state);
+    stateNameLength = strlen(stateName);
+
+    response.frame.startByte = (uint8_t)PROTOCOL_START_BYTE;
+    response.frame.subsystem = (uint8_t)SUBSYSTEM_LED_RGB;
+    response.frame.cmd = (uint8_t)APP_CMD_STATE_RESPONSE;
+    response.frame.payload_size[0] = (uint8_t)('0' + (stateNameLength / 10U));
+    response.frame.payload_size[1] = (uint8_t)('0' + (stateNameLength % 10U));
+    memcpy(response.frame.payload, stateName, stateNameLength);
+
+    (void)UARTDISPATCHER_sendAsync(app->uartDispatcher, &response);
+}
+
+static const char *appStateName(appState state)
+{
+    switch (state)
+    {
+        case APP_NORMAL:
+            return "NORMAL";
+
+        case APP_PET_LOST:
+            return "PET_LOST";
+
+        case APP_CONNECTION_LOST:
+            return "CONNECTION_LOST";
+
+        case APP_ERROR:
+        default:
+            return "ERROR";
+    }
 }
