@@ -16,6 +16,7 @@
 
 /* === Internal function declarations ====================================================== */
 gsp_error_t _getLatitude(char *rmc_msg, double *lat);
+gsp_error_t _getLongitude(char *rmc_msg, double *lon);
 
 /* === Internal variable definitions ======================================================= */
 
@@ -58,6 +59,38 @@ gsp_error_t _getLatitude(char *rmc_msg, double *lat) {
     return ERROR_OK;
 }
 
+gsp_error_t _getLongitude(char *rmc_msg, double *lon) {
+    char deg[4] = {0};
+    char min[7] = {0};
+    char *end;
+
+    if (!rmc_msg || !lon) {
+        return ERROR_POSITION_INVALID;
+    }
+
+    if (strlen(rmc_msg) <= 40) {
+        return ERROR_VALIDATION_FAIL;
+    }
+
+    strncpy(deg, &rmc_msg[30], 3);
+    double degD = strtod(deg, &end);
+
+    strncpy(min, &rmc_msg[33], 6);
+    double minD = strtod(min, &end);
+
+    double sign;
+    if (rmc_msg[40] == 'E') {
+        sign = 1;
+    } else if (rmc_msg[40] == 'W') {
+        sign = -1;
+    } else {
+        return ERROR_POSITION_INVALID;
+    }
+
+    *lon = sign * (degD + minD / 60.0);
+    return ERROR_OK;
+}
+
 /* === External function definitions ======================================================= */
 
 gsp_error_t GPS_PARSER_RMC_isValidMsg(char *rmc_msg) {
@@ -89,7 +122,13 @@ gsp_error_t GPS_PARSER_RMC_getPosition(char *rmc_msg, gps_rmc_position_t *positi
         return err;
     }
 
+    err = _getLongitude(rmc_msg, &pos.longitude);
+    if (err != ERROR_OK) {
+        return err;
+    }
+
     position->latitude = pos.latitude;
+    position->longitude = pos.longitude;
 
     return ERROR_OK;
 }

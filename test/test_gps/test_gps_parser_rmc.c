@@ -6,7 +6,7 @@ const char gpsValidMsg1[] =
     "GPRMC,192448.900,A,3256.499,S,06039.935,W,755.8,100.4,101026,000.0,W*75";
 
 const char gpsValidMsg2[] =
-    "GPRMC,192451.900,A,3256.711,N,06039.972,W,682.6,282.8,101026,000.0,W*7D";
+    "GPRMC,192451.900,A,3256.711,N,06039.972,E,682.6,282.8,101026,000.0,W*72";
 
 // Invalid frame
 const char gpsInvalidMsg[] =
@@ -44,7 +44,7 @@ gps_rmc_data_t expectedFrame2 = {
     .position =
         {
             .latitude = 32.94518333333333,
-            .longitude = -60.6662,
+            .longitude = 60.6662,
         },
     .time =
         {
@@ -101,4 +101,16 @@ void test_gps_getLatN(void) {
     gps_rmc_position_t pos = {0};
     TEST_ASSERT_EQUAL(ERROR_OK, GPS_PARSER_RMC_getPosition(&gpsValidMsg2, &pos));
     TEST_ASSERT_DOUBLE_WITHIN(0.000001, expectedFrame2.position.latitude, pos.latitude);
+}
+
+void test_gps_getLongW(void) {
+    gps_rmc_position_t pos = {0};
+    TEST_ASSERT_EQUAL(ERROR_OK, GPS_PARSER_RMC_getPosition(gpsValidMsg1, &pos));
+    TEST_ASSERT_DOUBLE_WITHIN(0.000001, expectedFrame1.position.longitude, pos.longitude);
+}
+
+void test_gps_getLongE(void) {
+    gps_rmc_position_t pos = {0};
+    TEST_ASSERT_EQUAL(ERROR_OK, GPS_PARSER_RMC_getPosition(gpsValidMsg2, &pos));
+    TEST_ASSERT_DOUBLE_WITHIN(0.000001, expectedFrame2.position.longitude, pos.longitude);
 }
