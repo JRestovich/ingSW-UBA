@@ -1,7 +1,21 @@
 #include "unity.h"
-// #include "gps.h"
 
 void setUp(void) {
+    // GPS message data
+    char gpsMsg[] = "$GPRMC,192448.900,A,3256.499,S,06039.935,W,755.8,100.4,101026,000.0,W*75";
+
+    // Resultados esperados
+    double expected_latitude = -32.94165000;
+    double expected_longitude = -60.66558333;
+
+    uint8_t expected_hours = 19;
+    uint8_t expected_minutes = 24;
+    uint8_t expected_seconds = 48;
+    uint16_t expected_milliseconds = 900;
+
+    uint8_t expected_day = 10;
+    uint8_t expected_month = 10;
+    uint16_t expected_year = 2026;
 }
 
 void tearDown(void) {
