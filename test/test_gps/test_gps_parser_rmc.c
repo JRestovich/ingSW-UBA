@@ -6,7 +6,7 @@ const char gpsValidMsg1[] =
     "GPRMC,192448.900,A,3256.499,S,06039.935,W,755.8,100.4,101026,000.0,W*75";
 
 const char gpsValidMsg2[] =
-    "GPRMC,192451.900,A,3256.711,S,06039.972,W,682.6,282.8,101026,000.0,W*7D";
+    "GPRMC,192451.900,A,3256.711,N,06039.972,W,682.6,282.8,101026,000.0,W*7D";
 
 // Invalid frame
 const char gpsInvalidMsg[] =
@@ -43,7 +43,7 @@ gps_rmc_data_t expectedFrame1 = {
 gps_rmc_data_t expectedFrame2 = {
     .position =
         {
-            .latitude = -32.94518333333333,
+            .latitude = 32.94518333333333,
             .longitude = -60.6662,
         },
     .time =
