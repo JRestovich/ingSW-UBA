@@ -24,7 +24,7 @@
 /* === External function definitions ======================================================= */
 
 gsp_error_t GPS_PARSER_RMC_isValidMsg(char *rmc_msg) {
-    gsp_error_t ERROR_VALIDATION_UNKNOW;
+    return ERROR_OK;
 }
 
 void GPS_PARSER_RMC_processMsg(char *rmc_msg) {
