@@ -16,17 +16,7 @@ const char gpsShortMsg[] = "GPRMC,";
 const char gpsUnknownMsg[] = "GPRMC,192448.900,B,";
 
 // Resultados esperados
-double expected_latitude = -32.94165000;
-double expected_longitude = -60.66558333;
-
-uint8_t expected_hours = 19;
-uint8_t expected_minutes = 24;
-uint8_t expected_seconds = 48;
-uint16_t expected_milliseconds = 900;
-
-uint8_t expected_day = 10;
-uint8_t expected_month = 10;
-uint16_t expected_year = 2026;
+gps_rmc_data_t expectedFrame1 = {{-32.94165000, -60.66558333}, {19, 24, 48, 900}, {10, 10, 2026}};
 
 void setUp(void) {
 }
