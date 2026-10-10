@@ -48,7 +48,8 @@ typedef struct {
 typedef enum {
     ERROR_OK,
     ERROR_VALIDATION_FAIL,
-    ERROR_VALIDATION_UNKNOW
+    ERROR_VALIDATION_UNKNOW,
+    ERROR_POSITION_INVALID
 } gsp_error_t;
 
 /* === External variable declarations ====================================================== */

@@ -96,3 +96,9 @@ void test_gps_getLat1(void) {
     TEST_ASSERT_EQUAL(ERROR_OK, GPS_PARSER_RMC_getPosition(&gpsValidMsg1, &pos));
     TEST_ASSERT_DOUBLE_WITHIN(0.000001, expectedFrame1.position.latitude, pos.latitude);
 }
+
+void test_gps_getLat2(void) {
+    gps_rmc_position_t pos = {0};
+    TEST_ASSERT_EQUAL(ERROR_OK, GPS_PARSER_RMC_getPosition(&gpsValidMsg2, &pos));
+    TEST_ASSERT_DOUBLE_WITHIN(0.000001, expectedFrame2.position.latitude, pos.latitude);
+}
