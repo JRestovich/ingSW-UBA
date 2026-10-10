@@ -10,7 +10,7 @@
 #include <string.h>
 
 /* === Definitions and macros ============================================================== */
-
+#define VALIDATION_POS 17
 /* === Internal data type declarations ===================================================== */
 
 /* === Internal function declarations ====================================================== */
@@ -24,7 +24,7 @@
 /* === External function definitions ======================================================= */
 
 gsp_error_t GPS_PARSER_RMC_isValidMsg(char *rmc_msg) {
-    if (!rmc_msg) {
+    if (!rmc_msg || strlen(rmc_msg) < VALIDATION_POS) {
         return ERROR_VALIDATION_FAIL;
     }
     return ERROR_OK;
