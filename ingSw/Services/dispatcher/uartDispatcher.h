@@ -40,14 +40,11 @@ uart_dispatcher_t *UARTDISPATCHER_get(uart_num uartNum);
 
 void UARTDISPATCHER_close(uart_dispatcher_t *uartDispatcher);
 
-bool UARTDISPATCHER_sendAsync(uart_dispatcher_t *uartDispatcher,
-                              const protocolData_u *message);
+bool UARTDISPATCHER_sendAsync(uart_dispatcher_t *uartDispatcher, const protocolData_u *message);
 
-bool UARTDISPATCHER_subscribe(uart_dispatcher_t *uartDispatcher,
-                              const subscriber_t *subscriber);
+bool UARTDISPATCHER_subscribe(uart_dispatcher_t *uartDispatcher, const subscriber_t *subscriber);
 
-bool UARTDISPATCHER_unsubscribe(uart_dispatcher_t *uartDispatcher,
-                              const subscriber_t *subscriber);
+bool UARTDISPATCHER_unsubscribe(uart_dispatcher_t *uartDispatcher, const subscriber_t *subscriber);
 
 /* === End of documentation ================================================================ */
 

@@ -23,8 +23,7 @@ extern "C" {
 
 /* === Data type declarations ============================================================== */
 
-typedef enum
-{
+typedef enum {
     EV_LED_OFF,
     EV_LED_ON,
     EV_LED_BLINK,
@@ -32,22 +31,19 @@ typedef enum
     EV_LED_NONE
 } led_ev_t;
 
-typedef enum
-{
+typedef enum {
     ST_LED_OFF,
     ST_LED_ON,
     ST_LED_BLINK
 } led_st_t;
 
-typedef struct
-{
+typedef struct {
     led_st_t state;
     led_ev_t ev_in;
     TickType_t tick;
 } led_sc_t;
 
-typedef struct
-{
+typedef struct {
     ledRgb led;
     led_sc_t led_sc;
     active_object_t ao;
@@ -58,9 +54,7 @@ typedef struct
 
 /* === External function declarations ====================================================== */
 
-void led_ao_open(h_led_t *self,
-                 ledRgb_id id,
-                 colorSequence *color_sequence,
+void led_ao_open(h_led_t *self, ledRgb_id id, colorSequence *color_sequence,
                  ledRgb_elec_conn connection);
 void led_ao_release(h_led_t *self);
 BaseType_t led_ao_send(h_led_t *self, const led_ev_t *event);

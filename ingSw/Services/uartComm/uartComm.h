@@ -28,23 +28,22 @@ extern "C" {
 
 #define UART_RX_CHUNK_LEN         64U
 #define UART_RX_STREAM_BUFFER_LEN 256U
-#define UART_TX_MAX_PAYLOAD      64U
+#define UART_TX_MAX_PAYLOAD       64U
 
 /* === Data type declarations ============================================================== */
 
 typedef struct uart_driver uart_driver_t;
 
-typedef struct
-{
-	uint8_t	data[UART_TX_MAX_PAYLOAD];
-	uint16_t length;
+typedef struct {
+    uint8_t data[UART_TX_MAX_PAYLOAD];
+    uint16_t length;
 } uart_msg_t;
 
 /* === External variable declarations ====================================================== */
 
 /* === External function declarations ====================================================== */
 
-uart_driver_t* UARTCOMM_get(uart_num uartNum);
+uart_driver_t *UARTCOMM_get(uart_num uartNum);
 
 void UARTCOMM_close(uart_driver_t *uartDriver);
 

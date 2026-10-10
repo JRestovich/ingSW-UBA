@@ -35,8 +35,7 @@ typedef enum {
     APP_CMD_STATE_RESPONSE = 'S'
 } appCommand_t;
 
-typedef struct
-{
+typedef struct {
     appState state;
 
     h_led_t statusLed;
