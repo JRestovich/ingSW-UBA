@@ -30,6 +30,7 @@ typedef struct {
     uint8_t hours;
     uint8_t minutes;
     uint8_t seconds;
+    uint16_t miliseconds;
 } gps_rmc_time_t;
 
 typedef struct {
