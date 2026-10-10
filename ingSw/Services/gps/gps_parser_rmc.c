@@ -29,8 +29,10 @@ gsp_error_t GPS_PARSER_RMC_isValidMsg(char *rmc_msg) {
     }
     if (rmc_msg[VALIDATION_POS] == 'A') {
         return ERROR_OK;
-    } else {
+    } else if (rmc_msg[VALIDATION_POS] == 'V') {
         return ERROR_VALIDATION_FAIL;
+    } else {
+        return ERROR_VALIDATION_UNKNOW;
     }
 }
 

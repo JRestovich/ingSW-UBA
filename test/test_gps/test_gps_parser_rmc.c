@@ -9,7 +9,11 @@ const char gpsValidMsg[] =
 const char gpsInvalidMsg[] =
     "GPRMC,192448.900,V,3256.499,S,06039.935,W,755.8,100.4,101026,000.0,W*75";
 
+// Short message
 const char gpsShortMsg[] = "GPRMC,";
+
+// Validation unknown frame
+const char gpsUnknownMsg[] = "GPRMC,192448.900,B,";
 
 // Resultados esperados
 double expected_latitude = -32.94165000;
@@ -48,4 +52,8 @@ void test_gps_validateShortMsg(void) {
 
 void test_gps_invalidData(void) {
     TEST_ASSERT_EQUAL(ERROR_VALIDATION_FAIL, GPS_PARSER_RMC_isValidMsg(&gpsInvalidMsg));
+}
+
+void test_gps_validateUnknown(void) {
+    TEST_ASSERT_EQUAL(ERROR_VALIDATION_UNKNOW, GPS_PARSER_RMC_isValidMsg(&gpsUnknownMsg));
 }
