@@ -2,8 +2,11 @@
 #include "gps_parser_rmc.h"
 
 // Valid Frame
-const char gpsValidMsg[] =
+const char gpsValidMsg1[] =
     "GPRMC,192448.900,A,3256.499,S,06039.935,W,755.8,100.4,101026,000.0,W*75";
+
+const char gpsValidMsg2[] =
+    "GPRMC,192451.900,A,3256.711,S,06039.972,W,682.6,282.8,101026,000.0,W*7D";
 
 // Invalid frame
 const char gpsInvalidMsg[] =
@@ -17,6 +20,26 @@ const char gpsUnknownMsg[] = "GPRMC,192448.900,B,";
 
 // Resultados esperados
 gps_rmc_data_t expectedFrame1 = {{-32.94165000, -60.66558333}, {19, 24, 48, 900}, {10, 10, 2026}};
+gps_rmc_data_t expectedFrame2 = {
+    .position =
+        {
+            .latitude = -32.94518333333333,
+            .longitude = -60.6662,
+        },
+    .time =
+        {
+            .hours = 19,
+            .minutes = 24,
+            .seconds = 51,
+            .miliseconds = 900,
+        },
+    .date =
+        {
+            .day = 10,
+            .month = 10,
+            .year = 2026,
+        },
+};
 
 void setUp(void) {
 }
@@ -29,7 +52,7 @@ void test_gps_dummy(void) {
 }
 
 void test_gps_validatedData(void) {
-    TEST_ASSERT_EQUAL(ERROR_OK, GPS_PARSER_RMC_isValidMsg(&gpsValidMsg));
+    TEST_ASSERT_EQUAL(ERROR_OK, GPS_PARSER_RMC_isValidMsg(&gpsValidMsg1));
 }
 
 void test_gps_validateNullData(void) {
