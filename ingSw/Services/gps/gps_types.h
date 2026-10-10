@@ -33,8 +33,15 @@ typedef struct {
 } gps_rmc_time_t;
 
 typedef struct {
+    uint8_t day;
+    uint8_t month;
+    uint8_t year;
+} gps_rmc_date_t;
+
+typedef struct {
     gps_rmc_position_t position;
     gps_rmc_time_t time;
+    gps_rmc_date_t date;
 } gps_rmc_data_t;
 
 typedef enum {
