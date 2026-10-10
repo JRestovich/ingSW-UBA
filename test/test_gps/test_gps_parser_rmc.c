@@ -19,7 +19,27 @@ const char gpsShortMsg[] = "GPRMC,";
 const char gpsUnknownMsg[] = "GPRMC,192448.900,B,";
 
 // Resultados esperados
-gps_rmc_data_t expectedFrame1 = {{-32.94165000, -60.66558333}, {19, 24, 48, 900}, {10, 10, 2026}};
+gps_rmc_data_t expectedFrame1 = {
+    .position =
+        {
+            .latitude = -32.94165000,
+            .longitude = -60.66558333,
+        },
+    .time =
+        {
+            .hours = 19,
+            .minutes = 24,
+            .seconds = 48,
+            .miliseconds = 900,
+        },
+    .date =
+        {
+            .day = 10,
+            .month = 10,
+            .year = 2026,
+        },
+};
+
 gps_rmc_data_t expectedFrame2 = {
     .position =
         {
