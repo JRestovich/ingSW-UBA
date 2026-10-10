@@ -12,4 +12,4 @@ repos:
     hooks:
       - id: clang-format
         name: Formating C files with Clang-Format
-        files: ^ingSw/(Services|App)/
+        files: ^(ingSw/(Services|App)/|test/)
