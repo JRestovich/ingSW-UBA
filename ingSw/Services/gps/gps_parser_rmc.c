@@ -39,7 +39,13 @@ gsp_error_t GPS_PARSER_RMC_isValidMsg(char *rmc_msg) {
 void GPS_PARSER_RMC_processMsg(char *rmc_msg) {
 }
 
-void GPS_PARSER_RMC_getPosition(char *rmc_msg) {
+gsp_error_t GPS_PARSER_RMC_getPosition(char *rmc_msg, gps_rmc_position_t *position) {
+    gps_rmc_position_t pos = {0};
+    pos.latitude = -32.94165000;
+
+    position->latitude = pos.latitude;
+
+    return ERROR_OK;
 }
 
 void GPS_PARSER_RMC_getTime(char *rmc_msg) {

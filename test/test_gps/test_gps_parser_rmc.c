@@ -90,3 +90,9 @@ void test_gps_invalidData(void) {
 void test_gps_validateUnknown(void) {
     TEST_ASSERT_EQUAL(ERROR_VALIDATION_UNKNOW, GPS_PARSER_RMC_isValidMsg(&gpsUnknownMsg));
 }
+
+void test_gps_getLat1(void) {
+    gps_rmc_position_t pos = {0};
+    TEST_ASSERT_EQUAL(ERROR_OK, GPS_PARSER_RMC_getPosition(&gpsValidMsg1, &pos));
+    TEST_ASSERT_DOUBLE_WITHIN(0.000001, expectedFrame1.position.latitude, pos.latitude);
+}

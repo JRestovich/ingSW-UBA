@@ -202,7 +202,7 @@
 # Configuration options specific to Unity.
 :unity:
   :defines:
-    - UNITY_EXCLUDE_FLOAT
+    - UNITY_INCLUDE_DOUBLE
 
 # You can optionally have ceedling create environment variables for you before
 # performing the rest of its tasks.
