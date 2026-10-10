@@ -1,19 +1,28 @@
 #ifndef LED_ACTIVE_OBJECT_H_
 #define LED_ACTIVE_OBJECT_H_
 
-/********************** CPP guard ********************************************/
-#ifdef __cplusplus
-extern "C" {
-#endif
+/** \file led_active_object.h
+ ** \brief Event-driven RGB LED interface.
+ **
+ ** \addtogroup LEDActiveObject
+ ** @{ */
 
-/********************** inclusions *******************************************/
+/* === External file includes ============================================================== */
+
 #include "active_object.h"
 #include "ledRgb.h"
 #include "timers.h"
 
-/********************** macros ***********************************************/
+/* === C++ linkage ========================================================================= */
 
-/********************** typedef **********************************************/
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/* === Definitions and macros ============================================================== */
+
+/* === Data type declarations ============================================================== */
+
 typedef enum
 {
     EV_LED_OFF,
@@ -45,9 +54,10 @@ typedef struct
     TimerHandle_t h_timer;
 } h_led_t;
 
-/********************** external data declaration ****************************/
+/* === External variable declarations ====================================================== */
 
-/********************** external functions declaration ***********************/
+/* === External function declarations ====================================================== */
+
 void led_ao_open(h_led_t *self,
                  ledRgb_id id,
                  colorSequence *color_sequence,
@@ -55,10 +65,12 @@ void led_ao_open(h_led_t *self,
 void led_ao_release(h_led_t *self);
 BaseType_t led_ao_send(h_led_t *self, const led_ev_t *event);
 
-/********************** End of CPP guard *************************************/
+/* === End of documentation ================================================================ */
+
 #ifdef __cplusplus
 }
 #endif
 
+/** @} End of the module definition for Doxygen */
+
 #endif /* LED_ACTIVE_OBJECT_H_ */
-/********************** end of file ******************************************/

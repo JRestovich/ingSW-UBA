@@ -10,8 +10,20 @@
 #ifndef INC_RING_BUFFER_H_
 #define INC_RING_BUFFER_H_
 
+/** \file ring_buffer.h
+ ** \brief Byte ring buffer types and interface.
+ **
+ ** \addtogroup RingBuffer
+ ** @{ */
+
+/* === External file includes ============================================================== */
+
 #include <stddef.h>
 #include <stdint.h>
+
+/* === C++ linkage ========================================================================= */
+
+/* === Definitions and macros ============================================================== */
 
 /**
  * @brief Checks if the buffer_size is a power of two.
@@ -30,6 +42,7 @@
  */
 #define RING_BUFFER_MASK(rb) (rb->buffer_mask)
 
+/* === Data type declarations ============================================================== */
 
 /**
  * The type which is used to hold the size
@@ -49,6 +62,9 @@ typedef struct {
   ring_buffer_size_t head_index; 	///< Index of head
 } ring_buffer_t;
 
+/* === External variable declarations ====================================================== */
+
+/* === External function declarations ====================================================== */
 
 /**
  * @brief Initializes the ring buffer pointed by buffer>.
@@ -109,6 +125,7 @@ ring_buffer_size_t ring_buffer_dequeue_arr(ring_buffer_t *buffer, char *data, ri
  */
 uint8_t ring_buffer_peek(ring_buffer_t *buffer, char *data, ring_buffer_size_t index);
 
+/* === Inline function definitions ========================================================= */
 
 /**
  * @brief Returns whether a ring buffer is empty.
@@ -140,6 +157,8 @@ inline ring_buffer_size_t ring_buffer_num_items(ring_buffer_t *buffer) {
   return ((buffer->head_index - buffer->tail_index) & RING_BUFFER_MASK(buffer));
 }
 
+/* === End of documentation ================================================================ */
 
+/** @} End of the module definition for Doxygen */
 
 #endif /* INC_RING_BUFFER_H_ */

@@ -1,23 +1,24 @@
-/**
- * @file app.h
- * @brief Interfaz de la maquina de estados principal de la aplicacion.
- *
- * Este modulo declara la API publica de inicializacion y ejecucion del flujo
- * principal de la aplicacion, junto con los tipos asociados al estado general
- * y al registro de errores de inicializacion de los perifericos utilizados.
- */
-
 #ifndef _APP_H_
 #define _APP_H_
 
-/********************************************************/
-/* Includes */
+/** \file app.h
+ ** \brief Application state machine interface.
+ **
+ ** \addtogroup Application
+ ** @{ */
+
+/* === External file includes ============================================================== */
+
 #include <stdbool.h>
 #include <stdint.h>
 #include "led_active_object.h"
 #include "uartDispatcher.h"
 
-/********************************************************/
+/* === C++ linkage ========================================================================= */
+
+/* === Definitions and macros ============================================================== */
+
+/* === Data type declarations ============================================================== */
 
 typedef enum {
     APP_NORMAL,
@@ -47,10 +48,18 @@ typedef struct
     QueueHandle_t appQueue;
 } app_t;
 
+/* === External variable declarations ====================================================== */
+
+/* === External function declarations ====================================================== */
+
 void APP_init(app_t *app);
 
 void APP_engine(void);
 
 uint8_t APP_getError(void);
+
+/* === End of documentation ================================================================ */
+
+/** @} End of the module definition for Doxygen */
 
 #endif /* _APP_H_ */

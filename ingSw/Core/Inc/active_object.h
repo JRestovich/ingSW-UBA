@@ -1,17 +1,28 @@
 #ifndef ACTIVE_OBJECT_H_
 #define ACTIVE_OBJECT_H_
 
-/********************** CPP guard ********************************************/
-#ifdef __cplusplus
-extern "C" {
-#endif
+/** \file active_object.h
+ ** \brief Task and queue handles for active objects.
+ **
+ ** \addtogroup ActiveObject
+ ** @{ */
 
-/********************** inclusions *******************************************/
+/* === External file includes ============================================================== */
+
 #include "FreeRTOS.h"
 #include "queue.h"
 #include "task.h"
 
-/********************** typedef **********************************************/
+/* === C++ linkage ========================================================================= */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/* === Definitions and macros ============================================================== */
+
+/* === Data type declarations ============================================================== */
+
 typedef struct
 {
     TaskHandle_t h_task;
@@ -20,11 +31,16 @@ typedef struct
     char task_txt[15];
 } active_object_t;
 
-/********************** End of CPP guard *************************************/
+/* === External variable declarations ====================================================== */
+
+/* === External function declarations ====================================================== */
+
+/* === End of documentation ================================================================ */
+
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* ACTIVE_OBJECT_H_ */
+/** @} End of the module definition for Doxygen */
 
-/********************** end of file ******************************************/
+#endif /* ACTIVE_OBJECT_H_ */

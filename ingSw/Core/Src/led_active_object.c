@@ -1,9 +1,23 @@
+/** \file led_active_object.c
+ ** \brief Event-driven RGB LED control.
+ **
+ ** \addtogroup LEDActiveObject
+ ** @{ */
+
+/* === Header includes ===================================================================== */
+
 #include "led_active_object.h"
+
+/* === Definitions and macros ============================================================== */
 
 #define LED_AO_QUEUE_LENGTH       8U
 #define LED_AO_TASK_STACK_SIZE    (configMINIMAL_STACK_SIZE * 2U)
 #define LED_AO_TASK_PRIORITY      (tskIDLE_PRIORITY + 1U)
 #define LED_AO_TIMEOUT_PERIOD     pdMS_TO_TICKS(1U)
+
+/* === Internal data type declarations ===================================================== */
+
+/* === Internal function declarations ====================================================== */
 
 static void task_led(void *parameters);
 static void task_led_statechart(h_led_t *self);
@@ -14,85 +28,11 @@ static bool led_ao_turn_off(h_led_t *self);
 static bool led_ao_turn_on(h_led_t *self);
 static bool led_ao_start_blink(h_led_t *self);
 
-void led_ao_open(h_led_t *self,
-                 ledRgb_id id,
-                 colorSequence *color_sequence,
-                 ledRgb_elec_conn connection)
-{
-    BaseType_t result;
-    bool led_created;
-    bool led_initialized;
+/* === Internal variable definitions ======================================================= */
 
-    configASSERT(self != NULL);
-    if (self == NULL)
-    {
-        return;
-    }
+/* === External variable definitions ======================================================= */
 
-    led_created = LED_RGB_ctor(&self->led, id, color_sequence, connection);
-    configASSERT(led_created);
-
-    led_initialized = LED_RGB_init(&self->led);
-    configASSERT(led_initialized);
-
-    self->ao.h_queue = xQueueCreate(LED_AO_QUEUE_LENGTH, sizeof(led_ev_t));
-    configASSERT(self->ao.h_queue != NULL);
-
-    vQueueAddToRegistry(self->ao.h_queue, self->ao.queue_txt);
-
-    self->h_timer = xTimerCreate("ledTimer",
-                                 LED_AO_TIMEOUT_PERIOD,
-                                 pdFALSE,
-                                 self,
-                                 led_ao_timeout_callback);
-    configASSERT(self->h_timer != NULL);
-
-    result = xTaskCreate(task_led,
-                         self->ao.task_txt,
-                         LED_AO_TASK_STACK_SIZE,
-                         self,
-                         LED_AO_TASK_PRIORITY,
-                         &self->ao.h_task);
-    configASSERT(result == pdPASS);
-}
-
-void led_ao_release(h_led_t *self)
-{
-    if (self == NULL)
-    {
-        return;
-    }
-
-    if (self->ao.h_task != NULL)
-    {
-        vTaskDelete(self->ao.h_task);
-        self->ao.h_task = NULL;
-    }
-
-    if (self->h_timer != NULL)
-    {
-        (void)xTimerStop(self->h_timer, 0U);
-        (void)xTimerDelete(self->h_timer, 0U);
-        self->h_timer = NULL;
-    }
-
-    if (self->ao.h_queue != NULL)
-    {
-        vQueueUnregisterQueue(self->ao.h_queue);
-        vQueueDelete(self->ao.h_queue);
-        self->ao.h_queue = NULL;
-    }
-}
-
-BaseType_t led_ao_send(h_led_t *self, const led_ev_t *event)
-{
-    if (self == NULL || event == NULL || self->ao.h_queue == NULL)
-    {
-        return pdFAIL;
-    }
-
-    return xQueueSend(self->ao.h_queue, event, 0U);
-}
+/* === Internal function definitions ======================================================= */
 
 static void led_ao_timeout_callback(TimerHandle_t timer)
 {
@@ -283,3 +223,89 @@ static void led_ao_schedule_timeout(h_led_t *self)
     /* xTimerChangePeriod also starts/restarts the one-shot timer. */
     (void)xTimerChangePeriod(self->h_timer, period, 0U);
 }
+
+/* === External function definitions ======================================================= */
+
+void led_ao_open(h_led_t *self,
+                 ledRgb_id id,
+                 colorSequence *color_sequence,
+                 ledRgb_elec_conn connection)
+{
+    BaseType_t result;
+    bool led_created;
+    bool led_initialized;
+
+    configASSERT(self != NULL);
+    if (self == NULL)
+    {
+        return;
+    }
+
+    led_created = LED_RGB_ctor(&self->led, id, color_sequence, connection);
+    configASSERT(led_created);
+
+    led_initialized = LED_RGB_init(&self->led);
+    configASSERT(led_initialized);
+
+    self->ao.h_queue = xQueueCreate(LED_AO_QUEUE_LENGTH, sizeof(led_ev_t));
+    configASSERT(self->ao.h_queue != NULL);
+
+    vQueueAddToRegistry(self->ao.h_queue, self->ao.queue_txt);
+
+    self->h_timer = xTimerCreate("ledTimer",
+                                 LED_AO_TIMEOUT_PERIOD,
+                                 pdFALSE,
+                                 self,
+                                 led_ao_timeout_callback);
+    configASSERT(self->h_timer != NULL);
+
+    result = xTaskCreate(task_led,
+                         self->ao.task_txt,
+                         LED_AO_TASK_STACK_SIZE,
+                         self,
+                         LED_AO_TASK_PRIORITY,
+                         &self->ao.h_task);
+    configASSERT(result == pdPASS);
+}
+
+void led_ao_release(h_led_t *self)
+{
+    if (self == NULL)
+    {
+        return;
+    }
+
+    if (self->ao.h_task != NULL)
+    {
+        vTaskDelete(self->ao.h_task);
+        self->ao.h_task = NULL;
+    }
+
+    if (self->h_timer != NULL)
+    {
+        (void)xTimerStop(self->h_timer, 0U);
+        (void)xTimerDelete(self->h_timer, 0U);
+        self->h_timer = NULL;
+    }
+
+    if (self->ao.h_queue != NULL)
+    {
+        vQueueUnregisterQueue(self->ao.h_queue);
+        vQueueDelete(self->ao.h_queue);
+        self->ao.h_queue = NULL;
+    }
+}
+
+BaseType_t led_ao_send(h_led_t *self, const led_ev_t *event)
+{
+    if (self == NULL || event == NULL || self->ao.h_queue == NULL)
+    {
+        return pdFAIL;
+    }
+
+    return xQueueSend(self->ao.h_queue, event, 0U);
+}
+
+/* === End of documentation ================================================================ */
+
+/** @} End of the module definition for Doxygen */

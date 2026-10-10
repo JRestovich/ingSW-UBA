@@ -1,27 +1,30 @@
-/**
- * @file app.h
- * @brief Interfaz de la maquina de estados principal de la aplicacion.
- *
- * Este modulo declara la API publica de inicializacion y ejecucion del flujo
- * principal de la aplicacion, junto con los tipos asociados al estado general
- * y al registro de errores de inicializacion de los perifericos utilizados.
- */
-
 #ifndef _COLORS_H_
 #define _COLORS_H_
 
-/********************************************************/
-/* Includes */
+/** \file colors.h
+ ** \brief RGB color sequences for application states.
+ **
+ ** \addtogroup ApplicationColors
+ ** @{ */
+
+/* === External file includes ============================================================== */
+
 #include <stdbool.h>
 #include <stdint.h>
 #include "ledRgb.h"
 
-/********************************************************/
+/* === C++ linkage ========================================================================= */
+
+/* === Definitions and macros ============================================================== */
 
 #define COLOR_RED   { .color = { 255U,   0U,   0U }, .timeout_ms = 2000U }
 #define COLOR_GREEN { .color = {   0U, 255U,   0U }, .timeout_ms = 2000U }
 #define COLOR_BLUE  { .color = {   0U,   0U, 255U }, .timeout_ms = 2000U }
 #define COLOR_OFF   { .color = {   0U,   0U,   0U }, .timeout_ms = 2000U }
+
+/* === Data type declarations ============================================================== */
+
+/* === Internal variable definitions ======================================================= */
 
 static colorStep_t app_normal_steps[] = {
   COLOR_GREEN,
@@ -66,5 +69,13 @@ static colorSequence app_error_sequence = {
   .stepQty = sizeof(app_error_steps) / sizeof(app_error_steps[0]),
   .index = 0,
 };
+
+/* === External variable declarations ====================================================== */
+
+/* === External function declarations ====================================================== */
+
+/* === End of documentation ================================================================ */
+
+/** @} End of the module definition for Doxygen */
 
 #endif /* _COLORS_H_ */

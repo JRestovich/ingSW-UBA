@@ -1,5 +1,26 @@
+/** \file ring_buffer.c
+ ** \brief Byte ring buffer implementation.
+ **
+ ** \addtogroup RingBuffer
+ ** @{ */
+
+/* === Header includes ===================================================================== */
+
 #include "ring_buffer.h"
 
+/* === Definitions and macros ============================================================== */
+
+/* === Internal data type declarations ===================================================== */
+
+/* === Internal function declarations ====================================================== */
+
+/* === Internal variable definitions ======================================================= */
+
+/* === External variable definitions ======================================================= */
+
+/* === Internal function definitions ======================================================= */
+
+/* === External function definitions ======================================================= */
 
 void ring_buffer_init(ring_buffer_t *buffer, char *buf, size_t buf_size) {
 	if(NULL != buffer && NULL != buf && 0 != buf_size) {
@@ -71,6 +92,12 @@ uint8_t ring_buffer_peek(ring_buffer_t *buffer, char *data, ring_buffer_size_t i
 	return 1;
 }
 
+/* === External inline function declarations =============================================== */
+
 extern inline uint8_t ring_buffer_is_empty(ring_buffer_t *buffer);
 extern inline uint8_t ring_buffer_is_full(ring_buffer_t *buffer);
 extern inline ring_buffer_size_t ring_buffer_num_items(ring_buffer_t *buffer);
+
+/* === End of documentation ================================================================ */
+
+/** @} End of the module definition for Doxygen */
