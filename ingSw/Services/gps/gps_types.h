@@ -22,29 +22,26 @@ extern "C" {
 /* === Data type declarations ============================================================== */
 
 typedef struct {
-    gps_rmc_position_t position;
-    gps_rmc_time_t time;
-} gps_rmc_data_t;
-
-typedef struct {
-    uint8_t hours;
-    uint8_t minutes;
-    uint8_t seconds;
-
     double latitude;
     double longitude;
-
 } gps_rmc_position_t;
 
 typedef struct {
     uint8_t hours;
     uint8_t minutes;
     uint8_t seconds;
-
-    double latitude;
-    double longitude;
-
 } gps_rmc_time_t;
+
+typedef struct {
+    gps_rmc_position_t position;
+    gps_rmc_time_t time;
+} gps_rmc_data_t;
+
+typedef enum {
+    ERROR_OK,
+    ERROR_VALIDATION_FAIL,
+    ERROR_VALIDATION_UNKNOW
+} gsp_error_t;
 
 /* === External variable declarations ====================================================== */
 

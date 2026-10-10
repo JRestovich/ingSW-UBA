@@ -23,13 +23,17 @@
 
 /* === External function definitions ======================================================= */
 
-void GPS_PARSER_RMC_processMsg(uint8_t *rmc_msg) {
+gsp_error_t GPS_PARSER_RMC_isValidMsg(char *rmc_msg) {
+    gsp_error_t ERROR_VALIDATION_UNKNOW;
 }
 
-void GPS_PARSER_RMC_getPosition(uint8_t *rmc_msg) {
+void GPS_PARSER_RMC_processMsg(char *rmc_msg) {
 }
 
-void GPS_PARSER_RMC_getTime(uint8_t *rmc_msg) {
+void GPS_PARSER_RMC_getPosition(char *rmc_msg) {
+}
+
+void GPS_PARSER_RMC_getTime(char *rmc_msg) {
 }
 
 /* === End of documentation ================================================================ */
