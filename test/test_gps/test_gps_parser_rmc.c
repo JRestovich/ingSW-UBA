@@ -32,6 +32,10 @@ void test_gps_dummy(void) {
     TEST_ASSERT_TRUE(1);
 }
 
-void test_gps_validData(void) {
+void test_gps_validatedData(void) {
     TEST_ASSERT_EQUAL(ERROR_OK, GPS_PARSER_RMC_isValidMsg(&gpsValidMsg));
+}
+
+void test_gps_validateNullData(void) {
+    TEST_ASSERT_EQUAL(ERROR_VALIDATION_FAIL, GPS_PARSER_RMC_isValidMsg(NULL));
 }
