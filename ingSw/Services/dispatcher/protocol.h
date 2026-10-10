@@ -1,29 +1,33 @@
-/* ******************************************************************************
-  * @file           : uartcomm.h
-  * @brief          : Header for pwm.c file.
-  *                   This file contains the common defines of the application.
-  *****************************************************************************/
-
-/* Define to prevent recursive inclusion -------------------------------------*/
 #ifndef __PROTOCOL_H
 #define __PROTOCOL_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+/** \brief UART protocol message format and subscribers.
+ **
+ ** \addtogroup Protocol UART Protocol
+ ** @{ */
 
-/* Includes ------------------------------------------------------------------*/
+/* === External file includes ============================================================== */
+
 #include <stdbool.h>
 #include <stdint.h>
 #include "FreeRTOS.h"
 #include "queue.h"
 
-/* Private includes ----------------------------------------------------------*/
+/* === C++ linkage ========================================================================= */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/* === Definitions and macros ============================================================== */
+
 #define PROTOCOL_LENGTH_FIELD_LEN 2U
 #define PROTOCOL_HEADER_LEN       5U // Includes PROTOCOL_LENGTH_FIELD_LEN
 #define MSG_SIZE                  64U
 #define PAYLOAD_MAX_SIZE          (MSG_SIZE - PROTOCOL_HEADER_LEN)
 #define PROTOCOL_START_BYTE '!'
+
+/* === Data type declarations ============================================================== */
 
 typedef enum {
     SUBSYSTEM_NONE = '0' - 1,
@@ -49,6 +53,18 @@ typedef union
     uint8_t rawData[MSG_SIZE];
 } protocolData_u;
 
+typedef struct
+{
+    subsystem_e     subsystem;
+	QueueHandle_t	queue_sub;
+} subscriber_t;
+
+/* === External variable declarations ====================================================== */
+
+/* === External function declarations ====================================================== */
+
+/* === Internal function definitions ======================================================= */
+
 static inline bool PROTOCOL_payloadSizeToUint8(
     const uint8_t payload_size[PROTOCOL_LENGTH_FIELD_LEN], uint8_t *size)
 {
@@ -69,15 +85,12 @@ static inline bool PROTOCOL_isValidSubsystem(uint8_t subsystem)
            subsystem < (uint8_t)SUBSYSTEM_END;
 }
 
-typedef struct
-{
-    subsystem_e     subsystem;
-	QueueHandle_t	queue_sub;
-} subscriber_t;
-
+/* === End of documentation ================================================================ */
 
 #ifdef __cplusplus
 }
 #endif
+
+/** @} End of the module definition for Doxygen */
 
 #endif /* __PROTOCOL_H */

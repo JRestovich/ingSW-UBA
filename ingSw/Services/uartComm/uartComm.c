@@ -1,14 +1,18 @@
-#include "uartComm.h"
+/** \brief Asynchronous UART communication using tasks and queues.
+ **
+ ** \addtogroup UARTComm UART Communication
+ ** @{ */
 
+/* === Header includes ===================================================================== */
+
+#include "uartComm.h"
 #include <string.h>
+
+/* === Definitions and macros ============================================================== */
 
 #define UART_TX_QUEUE_LEN 8U
 
-static bool _open(uart_driver_t *uartDriver, uart_num uartNum);
-static void UART_rxCompleteCallback(uint16_t size, void *context);
-static void UART_txCompleteCallback(void *context);
-static void task_uart_rx(void *parameters);
-static void task_uart_tx(void *parameters);
+/* === Internal data type declarations ===================================================== */
 
 struct uart_driver {
 	bool ready;
@@ -30,18 +34,21 @@ struct uart_driver {
 	SemaphoreHandle_t	sem_rx_cplt_cb;
 };
 
+/* === Internal function declarations ====================================================== */
+
+static bool _open(uart_driver_t *uartDriver, uart_num uartNum);
+static void UART_rxCompleteCallback(uint16_t size, void *context);
+static void UART_txCompleteCallback(void *context);
+static void task_uart_rx(void *parameters);
+static void task_uart_tx(void *parameters);
+
+/* === Internal variable definitions ======================================================= */
+
 static uart_driver_t uartDrivers[UART_COUNT] = {0};
 
-uart_driver_t* UARTCOMM_get(uart_num uartNum) {
-	if (uartNum >= UART_COUNT) {
-		return NULL;
-	}
+/* === External variable definitions ======================================================= */
 
-    if (!_open(&uartDrivers[uartNum], uartNum)) {
-        return NULL;
-    }
-    return &uartDrivers[uartNum];
-}
+/* === Internal function definitions ======================================================= */
 
 static bool _open(uart_driver_t *uartDriver, uart_num uartNum) {
 	if (uartDriver == NULL || uartNum >= UART_COUNT) {
@@ -119,70 +126,6 @@ static bool _open(uart_driver_t *uartDriver, uart_num uartNum) {
     return true;
 }
 
-void UARTCOMM_close(uart_driver_t *uartDriver)
-{
-	if (uartDriver == NULL || !uartDriver->ready) {
-		return;
-	}
-
-	(void)UART_setRxCallback(uartDriver->uartInterface, NULL, NULL);
-	(void)UART_setTxCallback(uartDriver->uartInterface, NULL, NULL);
-	uartDriver->ready = false;
-
-	if (uartDriver->task_rx != NULL) {
-		vTaskDelete(uartDriver->task_rx);
-		uartDriver->task_rx = NULL;
-	}
-	if (uartDriver->task_tx != NULL) {
-		vTaskDelete(uartDriver->task_tx);
-		uartDriver->task_tx = NULL;
-	}
-	if (uartDriver->queue_tx != NULL) {
-		vQueueDelete(uartDriver->queue_tx);
-		uartDriver->queue_tx = NULL;
-	}
-	if (uartDriver->sem_tx_cplt_cb != NULL) {
-		vSemaphoreDelete(uartDriver->sem_tx_cplt_cb);
-		uartDriver->sem_tx_cplt_cb = NULL;
-	}
-	if (uartDriver->sem_rx_cplt_cb != NULL) {
-		vSemaphoreDelete(uartDriver->sem_rx_cplt_cb);
-		uartDriver->sem_rx_cplt_cb = NULL;
-	}
-
-	uartDriver->rx_stream = NULL;
-	uartDriver->rx_size = 0U;
-	uartDriver->uartInterface = NULL;
-}
-
-bool UARTCOMM_sendAsync(uart_driver_t *uartDriver, const uint8_t *pData, uint16_t size)
-{
-    uart_msg_t message = {0};
-
-    if (uartDriver == NULL || !uartDriver->ready || pData == NULL || size == 0U ||
-        size > UART_TX_MAX_PAYLOAD) {
-        return false;
-    }
-
-    memcpy(message.data, pData, size);
-    message.length = size;
-
-    if (xQueueSend(uartDriver->queue_tx, &message, 0U) != pdPASS) {
-        return false;
-    }
-
-    return true;
-}
-
-StreamBufferHandle_t UARTCOMM_getRxStream(const uart_driver_t *uartDriver)
-{
-    if (uartDriver == NULL || !uartDriver->ready) {
-        return NULL;
-    }
-
-    return uartDriver->rx_stream;
-}
-
 /* Task UART TX thread */
 static void task_uart_tx(void *parameters)
 {
@@ -250,3 +193,84 @@ static void UART_txCompleteCallback(void *context)
 
     portYIELD_FROM_ISR(higher_priority_task_woken);
 }
+
+/* === External function definitions ======================================================= */
+
+uart_driver_t* UARTCOMM_get(uart_num uartNum) {
+	if (uartNum >= UART_COUNT) {
+		return NULL;
+	}
+
+    if (!_open(&uartDrivers[uartNum], uartNum)) {
+        return NULL;
+    }
+    return &uartDrivers[uartNum];
+}
+
+void UARTCOMM_close(uart_driver_t *uartDriver)
+{
+	if (uartDriver == NULL || !uartDriver->ready) {
+		return;
+	}
+
+	(void)UART_setRxCallback(uartDriver->uartInterface, NULL, NULL);
+	(void)UART_setTxCallback(uartDriver->uartInterface, NULL, NULL);
+	uartDriver->ready = false;
+
+	if (uartDriver->task_rx != NULL) {
+		vTaskDelete(uartDriver->task_rx);
+		uartDriver->task_rx = NULL;
+	}
+	if (uartDriver->task_tx != NULL) {
+		vTaskDelete(uartDriver->task_tx);
+		uartDriver->task_tx = NULL;
+	}
+	if (uartDriver->queue_tx != NULL) {
+		vQueueDelete(uartDriver->queue_tx);
+		uartDriver->queue_tx = NULL;
+	}
+	if (uartDriver->sem_tx_cplt_cb != NULL) {
+		vSemaphoreDelete(uartDriver->sem_tx_cplt_cb);
+		uartDriver->sem_tx_cplt_cb = NULL;
+	}
+	if (uartDriver->sem_rx_cplt_cb != NULL) {
+		vSemaphoreDelete(uartDriver->sem_rx_cplt_cb);
+		uartDriver->sem_rx_cplt_cb = NULL;
+	}
+
+	uartDriver->rx_stream = NULL;
+	uartDriver->rx_size = 0U;
+	uartDriver->uartInterface = NULL;
+}
+
+bool UARTCOMM_sendAsync(uart_driver_t *uartDriver, const uint8_t *pData, uint16_t size)
+{
+    uart_msg_t message = {0};
+
+    if (uartDriver == NULL || !uartDriver->ready || pData == NULL || size == 0U ||
+        size > UART_TX_MAX_PAYLOAD) {
+        return false;
+    }
+
+    memcpy(message.data, pData, size);
+    message.length = size;
+
+    if (xQueueSend(uartDriver->queue_tx, &message, 0U) != pdPASS) {
+        return false;
+    }
+
+    return true;
+}
+
+StreamBufferHandle_t UARTCOMM_getRxStream(const uart_driver_t *uartDriver)
+{
+    if (uartDriver == NULL || !uartDriver->ready) {
+        return NULL;
+    }
+
+    return uartDriver->rx_stream;
+}
+
+/* === End of documentation ================================================================ */
+
+/** @} End of the module definition for Doxygen */

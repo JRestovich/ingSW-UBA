@@ -1,24 +1,18 @@
-/* ******************************************************************************
-  * @file           : uartDistpacher.h
-  * @brief          : Header for pwm.c file.
-  *                   This file contains the common defines of the application.
-  *****************************************************************************/
-
-/* Define to prevent recursive inclusion -------------------------------------*/
 #ifndef __UARTDISPATCHER_H
 #define __UARTDISPATCHER_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+/** \brief UART message dispatcher interface.
+ **
+ ** \addtogroup UARTDispatcher UART Dispatcher
+ ** @{ */
 
-/* Includes ------------------------------------------------------------------*/
+/* === External file includes ============================================================== */
+
 #include <stdbool.h>
 #include <stdint.h>
 #include "uartComm/uartComm.h"
 #include "uart.h"
 #include "protocol.h"
-
 #include "FreeRTOS.h"
 #include "task.h"
 #include "uart.h"
@@ -26,8 +20,21 @@ extern "C" {
 #include "semphr.h"
 #include "stream_buffer.h"
 
-/* Private includes ----------------------------------------------------------*/
+/* === C++ linkage ========================================================================= */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/* === Definitions and macros ============================================================== */
+
+/* === Data type declarations ============================================================== */
+
 typedef struct uart_dispatcher uart_dispatcher_t;
+
+/* === External variable declarations ====================================================== */
+
+/* === External function declarations ====================================================== */
 
 uart_dispatcher_t *UARTDISPATCHER_get(uart_num uartNum);
 
@@ -42,8 +49,12 @@ bool UARTDISPATCHER_subscribe(uart_dispatcher_t *uartDispatcher,
 bool UARTDISPATCHER_unsubscribe(uart_dispatcher_t *uartDispatcher,
                               const subscriber_t *subscriber);
 
+/* === End of documentation ================================================================ */
+
 #ifdef __cplusplus
 }
 #endif
+
+/** @} End of the module definition for Doxygen */
 
 #endif /* __UARTDISPATCHER_H */

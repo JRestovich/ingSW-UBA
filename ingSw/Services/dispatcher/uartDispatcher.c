@@ -1,7 +1,18 @@
+/** \brief UART message dispatch to subscribed subsystems.
+ **
+ ** \addtogroup UARTDispatcher UART Dispatcher
+ ** @{ */
+
+/* === Header includes ===================================================================== */
+
 #include "uartDispatcher.h"
 #include <string.h>
 
+/* === Definitions and macros ============================================================== */
+
 #define MAX_SUBSCRIBER_QTY 8U
+
+/* === Internal data type declarations ===================================================== */
 
 typedef enum {
 	PARSER_IDLE = 0U,
@@ -11,13 +22,6 @@ typedef enum {
 	PARSER_SIZE_2,
 	PARSER_PAYLOAD
 } PARSER_STATE_E;
-
-static void task_rx_parser(void *parameters);
-static bool _open(uart_dispatcher_t *uartDispatcher, uart_num uartNum);
-static bool _dispatch(uart_dispatcher_t *uartDispatcher,
-                      const protocolData_u *message);
-static void _clearMessage(protocolData_u *message);
-static void _initSubscribers(uart_dispatcher_t *uartDispatcher);
 
 struct uart_dispatcher {
 	bool ready;
@@ -30,16 +34,22 @@ struct uart_dispatcher {
 	subscriber_t subscribers[MAX_SUBSCRIBER_QTY];
 };
 
+/* === Internal function declarations ====================================================== */
+
+static void task_rx_parser(void *parameters);
+static bool _open(uart_dispatcher_t *uartDispatcher, uart_num uartNum);
+static bool _dispatch(uart_dispatcher_t *uartDispatcher,
+                      const protocolData_u *message);
+static void _clearMessage(protocolData_u *message);
+static void _initSubscribers(uart_dispatcher_t *uartDispatcher);
+
+/* === Internal variable definitions ======================================================= */
+
 static uart_dispatcher_t uartDispatchers[UART_COUNT] = {0};
 
-uart_dispatcher_t *UARTDISPATCHER_get(uart_num uartNum)
-{
-	if (uartNum >= UART_COUNT || !_open(&uartDispatchers[uartNum], uartNum)) {
-		return NULL;
-	}
+/* === External variable definitions ======================================================= */
 
-	return &uartDispatchers[uartNum];
-}
+/* === Internal function definitions ======================================================= */
 
 static bool _open(uart_dispatcher_t *uartDispatcher, uart_num uartNum)
 {
@@ -72,28 +82,6 @@ static bool _open(uart_dispatcher_t *uartDispatcher, uart_num uartNum)
 	
 	uartDispatcher->ready = true;
 	return true;
-}
-
-void UARTDISPATCHER_close(uart_dispatcher_t *uartDispatcher)
-{
-	uart_driver_t *uartComm;
-
-	if (uartDispatcher == NULL || !uartDispatcher->ready) {
-		return;
-	}
-
-	uartDispatcher->ready = false;
-	if (uartDispatcher->task_parser != NULL) {
-		vTaskDelete(uartDispatcher->task_parser);
-		uartDispatcher->task_parser = NULL;
-	}
-
-	uartComm = uartDispatcher->uartComm;
-	uartDispatcher->rx_stream = NULL;
-	uartDispatcher->uartComm = NULL;
-	_initSubscribers(uartDispatcher);
-
-	UARTCOMM_close(uartComm);
 }
 
 static void task_rx_parser(void *parameters)
@@ -225,6 +213,39 @@ static bool _dispatch(uart_dispatcher_t *uartDispatcher,
 	return delivered;
 }
 
+/* === External function definitions ======================================================= */
+
+uart_dispatcher_t *UARTDISPATCHER_get(uart_num uartNum)
+{
+	if (uartNum >= UART_COUNT || !_open(&uartDispatchers[uartNum], uartNum)) {
+		return NULL;
+	}
+
+	return &uartDispatchers[uartNum];
+}
+
+void UARTDISPATCHER_close(uart_dispatcher_t *uartDispatcher)
+{
+	uart_driver_t *uartComm;
+
+	if (uartDispatcher == NULL || !uartDispatcher->ready) {
+		return;
+	}
+
+	uartDispatcher->ready = false;
+	if (uartDispatcher->task_parser != NULL) {
+		vTaskDelete(uartDispatcher->task_parser);
+		uartDispatcher->task_parser = NULL;
+	}
+
+	uartComm = uartDispatcher->uartComm;
+	uartDispatcher->rx_stream = NULL;
+	uartDispatcher->uartComm = NULL;
+	_initSubscribers(uartDispatcher);
+
+	UARTCOMM_close(uartComm);
+}
+
 bool UARTDISPATCHER_sendAsync(uart_dispatcher_t *uartDispatcher,
 							  const protocolData_u *message)
 {
@@ -298,3 +319,7 @@ bool UARTDISPATCHER_unsubscribe(uart_dispatcher_t *uartDispatcher,
 
 	return false;
 }
+
+/* === End of documentation ================================================================ */
+
+/** @} End of the module definition for Doxygen */
