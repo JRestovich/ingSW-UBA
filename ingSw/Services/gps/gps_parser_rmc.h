@@ -26,13 +26,13 @@ extern "C" {
 
 /* === External function declarations ====================================================== */
 
-gsp_error_t GPS_PARSER_RMC_isValidMsg(char *rmc_msg);
+gsp_error_t GPS_PARSER_RMC_isValidMsg(const char *rmc_msg);
 
-void GPS_PARSER_RMC_processMsg(char *rmc_msg);
+void GPS_PARSER_RMC_processMsg(const char *rmc_msg);
 
-gsp_error_t GPS_PARSER_RMC_getPosition(char *rmc_msg, gps_rmc_position_t *position);
+gsp_error_t GPS_PARSER_RMC_getPosition(const char *rmc_msg, gps_rmc_position_t *position);
 
-void GPS_PARSER_RMC_getTime(char *rmc_msg);
+gsp_error_t GPS_PARSER_RMC_getTime(const char *rmc_msg, gps_rmc_time_t *time);
 
 /* === End of documentation ================================================================ */
 
