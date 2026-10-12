@@ -171,3 +171,53 @@ void test_gps_getSecondsShortMsg(void) {
     gps_rmc_time_t time = {0};
     TEST_ASSERT_EQUAL(ERROR_VALIDATION_FAIL, GPS_PARSER_RMC_getTime("GPRMC,19244", &time));
 }
+
+void test_gps_getMiliseconds(void) {
+    gps_rmc_time_t time = {0};
+    TEST_ASSERT_EQUAL(ERROR_OK, GPS_PARSER_RMC_getTime(gpsValidMsg1, &time));
+    TEST_ASSERT_EQUAL_UINT16(expectedFrame1.time.miliseconds, time.miliseconds);
+}
+
+void test_gps_getMilisecondsZero(void) {
+    gps_rmc_time_t time = {0};
+    const char msg[] = "GPRMC,192448.000,A,";
+    TEST_ASSERT_EQUAL(ERROR_OK, GPS_PARSER_RMC_getTime(msg, &time));
+    TEST_ASSERT_EQUAL_UINT16(0, time.miliseconds);
+}
+
+void test_gps_getMilisecondsMax(void) {
+    gps_rmc_time_t time = {0};
+    const char msg[] = "GPRMC,192448.999,A,";
+    TEST_ASSERT_EQUAL(ERROR_OK, GPS_PARSER_RMC_getTime(msg, &time));
+    TEST_ASSERT_EQUAL_UINT16(999, time.miliseconds);
+}
+
+void test_gps_getMilisecondsLeadingZeros(void) {
+    gps_rmc_time_t time = {0};
+    const char msg[] = "GPRMC,192448.009,A,";
+    TEST_ASSERT_EQUAL(ERROR_OK, GPS_PARSER_RMC_getTime(msg, &time));
+    TEST_ASSERT_EQUAL_UINT16(9, time.miliseconds);
+}
+
+void test_gps_getMilisecondsInvalidDigits(void) {
+    gps_rmc_time_t time = {0};
+    const char msg[] = "GPRMC,192448.9X0,A,";
+    TEST_ASSERT_BITS_HIGH(ERROR_INPUT_DATA, GPS_PARSER_RMC_getTime(msg, &time));
+}
+
+void test_gps_getMilisecondsMissingDecimalPoint(void) {
+    gps_rmc_time_t time = {0};
+    const char msg[] = "GPRMC,192448X900,A,";
+    TEST_ASSERT_BITS_HIGH(ERROR_INPUT_DATA, GPS_PARSER_RMC_getTime(msg, &time));
+}
+
+void test_gps_getMilisecondsTooManyDigits(void) {
+    gps_rmc_time_t time = {0};
+    const char msg[] = "GPRMC,192448.1000,A,";
+    TEST_ASSERT_BITS_HIGH(ERROR_INPUT_DATA, GPS_PARSER_RMC_getTime(msg, &time));
+}
+
+void test_gps_getMilisecondsShortMsg(void) {
+    gps_rmc_time_t time = {0};
+    TEST_ASSERT_EQUAL(ERROR_VALIDATION_FAIL, GPS_PARSER_RMC_getTime("GPRMC,192448.90", &time));
+}

@@ -40,6 +40,8 @@
 #define SECOND_POS                10
 #define SECOND_LENGTH             2
 #define MAX_SECOND                59
+#define MILISECOND_POS            13
+#define MILISECOND_LENGTH         3
 
 /* === Internal data type declarations ===================================================== */
 
@@ -211,6 +213,30 @@ gsp_error_t _getSeconds(const char *rmc_msg, uint8_t *seconds) {
 }
 
 gsp_error_t _getMiliseconds(const char *rmc_msg, uint16_t *miliseconds) {
+    char ms[MILISECOND_LENGTH + STRING_TERMINATOR_LENGTH] = {0};
+    char *end;
+
+    if (!rmc_msg || !miliseconds) {
+        return ERROR_INPUT_DATA;
+    }
+
+    if (strlen(rmc_msg) <= MILISECOND_POS + MILISECOND_LENGTH) {
+        return ERROR_VALIDATION_FAIL;
+    }
+
+    if (rmc_msg[MILISECOND_POS - 1] != '.' || rmc_msg[MILISECOND_POS + MILISECOND_LENGTH] != ',') {
+        return ERROR_INPUT_DATA;
+    }
+
+    strncpy(ms, &rmc_msg[MILISECOND_POS], MILISECOND_LENGTH);
+    unsigned long msI = strtoul(ms, &end, 10);
+
+    if (!_isDigit(ms[0]) || !_isDigit(ms[1]) || !_isDigit(ms[2]) || end != ms + MILISECOND_LENGTH) {
+        return ERROR_INPUT_DATA;
+    }
+
+    *miliseconds = (uint16_t)msI;
+    return ERROR_OK;
 }
 
 /* === External function definitions ======================================================= */
@@ -255,10 +281,12 @@ gsp_error_t GPS_PARSER_RMC_getTime(const char *rmc_msg, gps_rmc_time_t *time) {
     err |= _getHours(rmc_msg, &_time.hours);
     err |= _getMinutes(rmc_msg, &_time.minutes);
     err |= _getSeconds(rmc_msg, &_time.seconds);
+    err |= _getMiliseconds(rmc_msg, &_time.miliseconds);
 
     time->hours = _time.hours;
     time->minutes = _time.minutes;
     time->seconds = _time.seconds;
+    time->miliseconds = _time.miliseconds;
     return err;
 }
 
