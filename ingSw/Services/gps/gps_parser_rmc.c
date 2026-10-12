@@ -236,7 +236,6 @@ gsp_error_t GPS_PARSER_RMC_getPosition(const char *rmc_msg, gps_rmc_position_t *
     gsp_error_t err = GPS_PARSER_RMC_isValidMsg(rmc_msg);
 
     err |= _getLatitude(rmc_msg, &pos.latitude);
-
     err |= _getLongitude(rmc_msg, &pos.longitude);
 
     position->latitude = pos.latitude;
@@ -254,9 +253,7 @@ gsp_error_t GPS_PARSER_RMC_getTime(const char *rmc_msg, gps_rmc_time_t *time) {
     gsp_error_t err = GPS_PARSER_RMC_isValidMsg(rmc_msg);
 
     err |= _getHours(rmc_msg, &_time.hours);
-
     err |= _getMinutes(rmc_msg, &_time.minutes);
-
     err |= _getSeconds(rmc_msg, &_time.seconds);
 
     time->hours = _time.hours;
