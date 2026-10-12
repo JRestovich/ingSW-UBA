@@ -55,6 +55,10 @@ gsp_error_t _getMinutes(const char *rmc_msg, uint8_t *minute);
 gsp_error_t _getSeconds(const char *rmc_msg, uint8_t *seconds);
 gsp_error_t _getMiliseconds(const char *rmc_msg, uint16_t *miliseconds);
 
+gsp_error_t _getDay(const char *rmc_msg, uint8_t *day);
+gsp_error_t _getMonth(const char *rmc_msg, uint8_t *moth);
+gsp_error_t _getYear(const char *rmc_msg, uint8_t *year);
+
 /* === Internal variable definitions ======================================================= */
 
 /* === External variable definitions ======================================================= */
@@ -239,6 +243,18 @@ gsp_error_t _getMiliseconds(const char *rmc_msg, uint16_t *miliseconds) {
     return ERROR_OK;
 }
 
+gsp_error_t _getDay(const char *rmc_msg, uint8_t *day) {
+    return ERROR_VALIDATION_FAIL;
+}
+
+gsp_error_t _getMonth(const char *rmc_msg, uint8_t *month) {
+    return ERROR_VALIDATION_FAIL;
+}
+
+gsp_error_t _getYear(const char *rmc_msg, uint8_t *year) {
+    return ERROR_VALIDATION_FAIL;
+}
+
 /* === External function definitions ======================================================= */
 
 gsp_error_t GPS_PARSER_RMC_isValidMsg(const char *rmc_msg) {
@@ -287,6 +303,25 @@ gsp_error_t GPS_PARSER_RMC_getTime(const char *rmc_msg, gps_rmc_time_t *time) {
     time->minutes = _time.minutes;
     time->seconds = _time.seconds;
     time->miliseconds = _time.miliseconds;
+    return err;
+}
+
+gsp_error_t GPS_PARSER_RMC_getDate(const char *rmc_msg, gps_rmc_date_t *date) {
+    if (!date) {
+        return ERROR_INPUT_DATA;
+    }
+
+    gps_rmc_date_t _date = {0};
+    gsp_error_t err = GPS_PARSER_RMC_isValidMsg(rmc_msg);
+
+    err |= _getDay(rmc_msg, &_date.day);
+    err |= _getMonth(rmc_msg, &_date.month);
+    err |= _getYear(rmc_msg, &_date.year);
+
+    date->day = _date.day;
+    date->month = _date.month;
+    date->year = _date.year;
+
     return err;
 }
 

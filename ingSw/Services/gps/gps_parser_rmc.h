@@ -34,6 +34,8 @@ gsp_error_t GPS_PARSER_RMC_getPosition(const char *rmc_msg, gps_rmc_position_t *
 
 gsp_error_t GPS_PARSER_RMC_getTime(const char *rmc_msg, gps_rmc_time_t *time);
 
+gsp_error_t GPS_PARSER_RMC_getDate(const char *rmc_msg, gps_rmc_date_t *date);
+
 /* === End of documentation ================================================================ */
 
 #ifdef __cplusplus
