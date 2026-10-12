@@ -49,7 +49,9 @@ typedef enum {
     ERROR_OK,
     ERROR_VALIDATION_FAIL,
     ERROR_VALIDATION_UNKNOW,
-    ERROR_POSITION_INVALID
+    ERROR_POSITION_INVALID,
+    ERROR_LAT_OUT_OF_RANGE,
+    ERROR_LONG_OUT_OF_RANGE
 } gsp_error_t;
 
 /* === External variable declarations ====================================================== */

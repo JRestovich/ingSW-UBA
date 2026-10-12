@@ -18,6 +18,12 @@ const char gpsShortMsg[] = "GPRMC,";
 // Validation unknown frame
 const char gpsUnknownMsg[] = "GPRMC,192448.900,B,";
 
+const char gpsLatLongOutOfRange1[] =
+    "GPRMC,192451.900,A,9056.711,S,18039.972,E,682.6,282.8,101026,000.0,W*72";
+
+const char gpsLatLongOutOfRange2[] =
+    "GPRMC,192451.900,A,9056.711,N,18039.972,W,682.6,282.8,101026,000.0,W*72";
+
 // Resultados esperados
 gps_rmc_data_t expectedFrame1 = {
     .position =
@@ -101,6 +107,18 @@ void test_gps_getLatN(void) {
     gps_rmc_position_t pos = {0};
     TEST_ASSERT_EQUAL(ERROR_OK, GPS_PARSER_RMC_getPosition(&gpsValidMsg2, &pos));
     TEST_ASSERT_DOUBLE_WITHIN(0.000001, expectedFrame2.position.latitude, pos.latitude);
+}
+
+void test_gps_getLatOutOfRangeS(void) {
+    gps_rmc_position_t pos = {0};
+    TEST_ASSERT_EQUAL(ERROR_LAT_OUT_OF_RANGE,
+                      GPS_PARSER_RMC_getPosition(&gpsLatLongOutOfRange1, &pos));
+}
+
+void test_gps_getLatOutOfRangeN(void) {
+    gps_rmc_position_t pos = {0};
+    TEST_ASSERT_EQUAL(ERROR_LAT_OUT_OF_RANGE,
+                      GPS_PARSER_RMC_getPosition(&gpsLatLongOutOfRange2, &pos));
 }
 
 void test_gps_getLongW(void) {

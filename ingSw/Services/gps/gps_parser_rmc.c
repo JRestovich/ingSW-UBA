@@ -25,6 +25,9 @@
 #define MINUTES_PER_DEGREE        60.0
 #define POSITIVE_COORDINATE_SIGN  1.0
 #define NEGATIVE_COORDINATE_SIGN  (-1.0)
+#define MAX_LATITUDE              (90.0)
+#define MIN_LATITUDE              (-90.0)
+
 /* === Internal data type declarations ===================================================== */
 
 /* === Internal function declarations ====================================================== */
@@ -65,6 +68,9 @@ gsp_error_t _getLatitude(char *rmc_msg, double *lat) {
     }
 
     *lat = sign * (degD + minD / MINUTES_PER_DEGREE);
+    if (*lat > MAX_LATITUDE || *lat < MIN_LATITUDE) {
+        return ERROR_LAT_OUT_OF_RANGE;
+    }
     return ERROR_OK;
 }
 
