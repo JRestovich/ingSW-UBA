@@ -274,3 +274,54 @@ void test_gps_getMonthShortMsg(void) {
     const char msg[] = "GPRMC,192448.900,A,3256.499,S,06039.935,W,755.8,100.4,101,000.0,W*75";
     TEST_ASSERT_BITS_HIGH(ERROR_VALIDATION_FAIL, GPS_PARSER_RMC_getDate(msg, &date));
 }
+
+void test_gps_getDay(void) {
+    gps_rmc_date_t date = {0};
+    TEST_ASSERT_EQUAL(ERROR_OK, GPS_PARSER_RMC_getDate(gpsValidMsg1, &date));
+    TEST_ASSERT_EQUAL_UINT8(expectedFrame1.date.day, date.day);
+}
+
+void test_gps_getDayZero(void) {
+    gps_rmc_date_t date = {0};
+    const char msg[] = "GPRMC,192448.900,A,3256.499,S,06039.935,W,755.8,100.4,001026,000.0,W*75";
+    TEST_ASSERT_NOT_EQUAL(ERROR_OK, GPS_PARSER_RMC_getDate(msg, &date));
+}
+
+void test_gps_getDayMonth31Days(void) {
+    gps_rmc_date_t date = {0};
+    const char msg[] = "GPRMC,192448.900,A,3256.499,S,06039.935,W,755.8,100.4,311026,000.0,W*75";
+    TEST_ASSERT_EQUAL(ERROR_OK, GPS_PARSER_RMC_getDate(msg, &date));
+    TEST_ASSERT_EQUAL_UINT8(31, date.day);
+}
+
+void test_gps_getDayMonth30Days(void) {
+    gps_rmc_date_t date = {0};
+    const char msg[] = "GPRMC,192448.900,A,3256.499,S,06039.935,W,755.8,100.4,300426,000.0,W*75";
+    TEST_ASSERT_EQUAL(ERROR_OK, GPS_PARSER_RMC_getDate(msg, &date));
+    TEST_ASSERT_EQUAL_UINT8(30, date.day);
+}
+
+void test_gps_getDayInvalidDayForMonth(void) {
+    gps_rmc_date_t date = {0};
+    const char msg[] = "GPRMC,192448.900,A,3256.499,S,06039.935,W,755.8,100.4,310426,000.0,W*75";
+    TEST_ASSERT_NOT_EQUAL(ERROR_OK, GPS_PARSER_RMC_getDate(msg, &date));
+}
+
+void test_gps_getDayLeapYearFebruary(void) {
+    gps_rmc_date_t date = {0};
+    const char msg[] = "GPRMC,192448.900,A,3256.499,S,06039.935,W,755.8,100.4,290224,000.0,W*75";
+    TEST_ASSERT_EQUAL(ERROR_OK, GPS_PARSER_RMC_getDate(msg, &date));
+    TEST_ASSERT_EQUAL_UINT8(29, date.day);
+}
+
+void test_gps_getDayNonLeapYearFebruary(void) {
+    gps_rmc_date_t date = {0};
+    const char msg[] = "GPRMC,192448.900,A,3256.499,S,06039.935,W,755.8,100.4,290226,000.0,W*75";
+    TEST_ASSERT_NOT_EQUAL(ERROR_OK, GPS_PARSER_RMC_getDate(msg, &date));
+}
+
+void test_gps_getDayInvalidDigits(void) {
+    gps_rmc_date_t date = {0};
+    const char msg[] = "GPRMC,192448.900,A,3256.499,S,06039.935,W,755.8,100.4,X11026,000.0,W*75";
+    TEST_ASSERT_NOT_EQUAL(ERROR_OK, GPS_PARSER_RMC_getDate(msg, &date));
+}

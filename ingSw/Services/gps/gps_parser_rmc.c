@@ -51,6 +51,9 @@
 #define MONTH_LENGTH              2
 #define MIN_MONTH                 1
 #define MAX_MONTH                 12
+#define DAY_LENGTH                2
+#define DAY_POS                   54
+#define MIN_DAY                   1
 
 /* === Internal data type declarations ===================================================== */
 
@@ -66,7 +69,9 @@ gsp_error_t _getMiliseconds(const char *rmc_msg, uint16_t *miliseconds);
 
 gsp_error_t _getYear(const char *rmc_msg, uint8_t *year);
 gsp_error_t _getMonth(const char *rmc_msg, uint8_t *month);
-gsp_error_t _getDay(const char *rmc_msg, uint8_t *day);
+gsp_error_t _getDay(const char *rmc_msg, uint8_t *day, uint8_t *month, uint8_t *year);
+uint8_t _getMaxDay(uint8_t month, uint8_t year);
+bool _isLeapYear(uint8_t year);
 
 /* === Internal variable definitions ======================================================= */
 
@@ -315,8 +320,65 @@ gsp_error_t _getMonth(const char *rmc_msg, uint8_t *month) {
     return ERROR_OK;
 }
 
-gsp_error_t _getDay(const char *rmc_msg, uint8_t *year) {
-    return ERROR_VALIDATION_FAIL;
+gsp_error_t _getDay(const char *rmc_msg, uint8_t *day, uint8_t *month, uint8_t *year) {
+    char dd[DAY_LENGTH + STRING_TERMINATOR_LENGTH] = {0};
+    char *end;
+
+    if (!rmc_msg || !day) {
+        return ERROR_INPUT_DATA;
+    }
+
+    if (strlen(rmc_msg) < DAY_POS + DAY_LENGTH) {
+        return ERROR_VALIDATION_FAIL;
+    }
+
+    strncpy(dd, &rmc_msg[DAY_POS], DAY_LENGTH);
+    unsigned long ddI = strtoul(dd, &end, 10);
+
+    if (!_isDigit(dd[0]) || !_isDigit(dd[1]) || end != dd + MONTH_LENGTH) {
+        return ERROR_INPUT_DATA;
+    }
+
+    *day = (uint8_t)ddI;
+    if (*day < MIN_DAY || *day > _getMaxDay(*month, *year)) {
+        return ERROR_MONTH_OUT_OF_RANGE;
+    }
+    return ERROR_OK;
+}
+
+uint8_t _getMaxDay(uint8_t month, uint8_t year) {
+    switch (month) {
+    case JANUARY:
+    case MARCH:
+    case MAY:
+    case JULY:
+    case AUGUST:
+    case OCTOBER:
+    case DECEMBER:
+        return 31;
+
+    case APRIL:
+    case JUNE:
+    case SEPTEMBER:
+    case NOVENMBER:
+        return 30;
+
+    case FEBRUARY:
+        return _isLeapYear(year) ? 29 : 28;
+
+    default:
+        return 1;
+    }
+}
+
+bool _isLeapYear(uint8_t year) {
+    if (year % 400 == 0) {
+        return true;
+    } else if (year % 4 == 0 && year % 100 != 0) {
+        return true;
+    } else {
+        return false;
+    }
 }
 
 /* === External function definitions ======================================================= */
@@ -378,9 +440,12 @@ gsp_error_t GPS_PARSER_RMC_getDate(const char *rmc_msg, gps_rmc_date_t *date) {
     gps_rmc_date_t _date = {0};
     gsp_error_t err = GPS_PARSER_RMC_isValidMsg(rmc_msg);
 
-    err |= _getDay(rmc_msg, &_date.day);
     err |= _getMonth(rmc_msg, &_date.month);
     err |= _getYear(rmc_msg, &_date.year);
+    if (err != ERROR_OK) {
+        return err;
+    }
+    err |= _getDay(rmc_msg, &_date.day, &_date.month, &_date.year);
 
     date->day = _date.day;
     date->month = _date.month;

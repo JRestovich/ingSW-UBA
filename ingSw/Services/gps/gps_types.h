@@ -59,6 +59,21 @@ typedef enum {
     ERROR_MONTH_OUT_OF_RANGE = (1U << 9),
 } gsp_error_t;
 
+typedef enum {
+    JANUARY = 1,
+    FEBRUARY,
+    MARCH,
+    APRIL,
+    MAY,
+    JUNE,
+    JULY,
+    AUGUST,
+    SEPTEMBER,
+    OCTOBER,
+    NOVENMBER,
+    DECEMBER
+} moths_t;
+
 /* === External variable declarations ====================================================== */
 
 /* === External function declarations ====================================================== */
