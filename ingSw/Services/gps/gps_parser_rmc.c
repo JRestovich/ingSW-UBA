@@ -45,8 +45,9 @@
 
 #define CENTURY_21                2000
 #define YEAR_LENGTH               2
-#define DATE_FIELD                9
-#define YEAR_OFFSET               4
+#define YEAR_POS                  58
+#define MIN_YEAR                  0
+#define MAX_YEAR                  99
 #define MONTH_POS                 56
 #define MONTH_LENGTH              2
 #define MIN_MONTH                 1
@@ -67,11 +68,11 @@ gsp_error_t _getMinutes(const char *rmc_msg, uint8_t *minute);
 gsp_error_t _getSeconds(const char *rmc_msg, uint8_t *seconds);
 gsp_error_t _getMiliseconds(const char *rmc_msg, uint16_t *miliseconds);
 
-gsp_error_t _getYear(const char *rmc_msg, uint8_t *year);
+gsp_error_t _getYear(const char *rmc_msg, uint16_t *year);
 gsp_error_t _getMonth(const char *rmc_msg, uint8_t *month);
-gsp_error_t _getDay(const char *rmc_msg, uint8_t *day, uint8_t *month, uint8_t *year);
-uint8_t _getMaxDay(uint8_t month, uint8_t year);
-bool _isLeapYear(uint8_t year);
+gsp_error_t _getDay(const char *rmc_msg, uint8_t *day, uint8_t *month, uint16_t *year);
+uint8_t _getMaxDay(uint8_t month, uint16_t year);
+bool _isLeapYear(uint16_t year);
 
 /* === Internal variable definitions ======================================================= */
 
@@ -257,7 +258,7 @@ gsp_error_t _getMiliseconds(const char *rmc_msg, uint16_t *miliseconds) {
     return ERROR_OK;
 }
 
-gsp_error_t _getYear(const char *rmc_msg, uint8_t *year) {
+gsp_error_t _getYear(const char *rmc_msg, uint16_t *year) {
     char yy[YEAR_LENGTH + STRING_TERMINATOR_LENGTH] = {0};
     char *end;
 
@@ -265,32 +266,21 @@ gsp_error_t _getYear(const char *rmc_msg, uint8_t *year) {
         return ERROR_INPUT_DATA;
     }
 
-    const char *date = rmc_msg;
-    for (unsigned int field = 0; field < DATE_FIELD; field++) {
-        date = strchr(date, ',');
-        if (!date) {
-            return ERROR_VALIDATION_FAIL;
-        }
-        date++;
-    }
-
-    // La posición de la fecha varía con la longitud de velocidad y rumbo.
-    const char *dateEnd = strchr(date, ',');
-    if (!dateEnd || dateEnd - date < YEAR_OFFSET + YEAR_LENGTH) {
+    if (strlen(rmc_msg) < YEAR_POS + YEAR_LENGTH) {
         return ERROR_VALIDATION_FAIL;
     }
-    if (dateEnd - date != YEAR_OFFSET + YEAR_LENGTH) {
-        return ERROR_INPUT_DATA;
-    }
 
-    strncpy(yy, &date[YEAR_OFFSET], YEAR_LENGTH);
+    strncpy(yy, &rmc_msg[YEAR_POS], YEAR_LENGTH);
     unsigned long yyI = strtoul(yy, &end, 10);
 
     if (!_isDigit(yy[0]) || !_isDigit(yy[1]) || end != yy + YEAR_LENGTH) {
         return ERROR_INPUT_DATA;
     }
 
-    *year = CENTURY_21 + (uint8_t)yyI;
+    if (yyI < MIN_YEAR || yyI > MAX_YEAR) {
+        return ERROR_YEAR_OUT_OF_RANGE;
+    }
+    *year = CENTURY_21 + (uint16_t)yyI;
     return ERROR_OK;
 }
 
@@ -320,7 +310,7 @@ gsp_error_t _getMonth(const char *rmc_msg, uint8_t *month) {
     return ERROR_OK;
 }
 
-gsp_error_t _getDay(const char *rmc_msg, uint8_t *day, uint8_t *month, uint8_t *year) {
+gsp_error_t _getDay(const char *rmc_msg, uint8_t *day, uint8_t *month, uint16_t *year) {
     char dd[DAY_LENGTH + STRING_TERMINATOR_LENGTH] = {0};
     char *end;
 
@@ -346,7 +336,7 @@ gsp_error_t _getDay(const char *rmc_msg, uint8_t *day, uint8_t *month, uint8_t *
     return ERROR_OK;
 }
 
-uint8_t _getMaxDay(uint8_t month, uint8_t year) {
+uint8_t _getMaxDay(uint8_t month, uint16_t year) {
     switch (month) {
     case JANUARY:
     case MARCH:
@@ -371,7 +361,7 @@ uint8_t _getMaxDay(uint8_t month, uint8_t year) {
     }
 }
 
-bool _isLeapYear(uint8_t year) {
+bool _isLeapYear(uint16_t year) {
     if (year % 400 == 0) {
         return true;
     } else if (year % 4 == 0 && year % 100 != 0) {

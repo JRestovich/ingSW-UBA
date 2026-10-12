@@ -36,7 +36,7 @@ typedef struct {
 typedef struct {
     uint8_t day;
     uint8_t month;
-    uint8_t year;
+    uint16_t year;
 } gps_rmc_date_t;
 
 typedef struct {
@@ -57,6 +57,7 @@ typedef enum {
     ERROR_MM_OUT_OF_RANGE = (1U << 7),
     ERROR_SS_OUT_OF_RANGE = (1U << 8),
     ERROR_MONTH_OUT_OF_RANGE = (1U << 9),
+    ERROR_YEAR_OUT_OF_RANGE = (1U << 10),
 } gsp_error_t;
 
 typedef enum {
