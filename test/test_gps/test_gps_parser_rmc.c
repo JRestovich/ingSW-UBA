@@ -8,6 +8,8 @@ void setUp(void) {
 void tearDown(void) {
 }
 
+// === Validación del mensaje ===
+
 void test_gps_validatedData(void) {
     TEST_ASSERT_EQUAL(ERROR_OK, GPS_PARSER_RMC_isValidMsg(gpsValidMsg1));
 }
@@ -27,6 +29,8 @@ void test_gps_invalidData(void) {
 void test_gps_validateUnknown(void) {
     TEST_ASSERT_BITS_HIGH(ERROR_VALIDATION_UNKNOW, GPS_PARSER_RMC_isValidMsg(gpsUnknownMsg));
 }
+
+// === Posición: latitud y longitud ===
 
 void test_gps_getLatS(void) {
     gps_rmc_position_t pos = {0};
@@ -76,6 +80,57 @@ void test_gps_getLongOutOfRangeW(void) {
                           GPS_PARSER_RMC_getPosition(gpsLatLongOutOfRange2, &pos));
 }
 
+void test_gps_getPositionLatitudeOutOfRangeOnly(void) {
+    gps_rmc_position_t pos = {0};
+    TEST_ASSERT_EQUAL(ERROR_LAT_OUT_OF_RANGE,
+                      GPS_PARSER_RMC_getPosition(gpsPositionLatitudeOutOfRangeOnly, &pos));
+    TEST_ASSERT_DOUBLE_WITHIN(0.000001, -60.66558333333333, pos.longitude);
+}
+
+void test_gps_getPositionLongitudeOutOfRangeOnly(void) {
+    gps_rmc_position_t pos = {0};
+    TEST_ASSERT_EQUAL(ERROR_LONG_OUT_OF_RANGE,
+                      GPS_PARSER_RMC_getPosition(gpsPositionLongitudeOutOfRangeOnly, &pos));
+    TEST_ASSERT_DOUBLE_WITHIN(0.000001, -32.94165, pos.latitude);
+}
+
+void test_gps_getPositionNorthWest(void) {
+    gps_rmc_position_t pos = {0};
+    TEST_ASSERT_EQUAL(ERROR_OK, GPS_PARSER_RMC_getPosition(gpsPositionNorthWest, &pos));
+    TEST_ASSERT_DOUBLE_WITHIN(0.000001, 32.94165, pos.latitude);
+    TEST_ASSERT_DOUBLE_WITHIN(0.000001, -60.66558333333333, pos.longitude);
+}
+
+void test_gps_getPositionSouthEast(void) {
+    gps_rmc_position_t pos = {0};
+    TEST_ASSERT_EQUAL(ERROR_OK, GPS_PARSER_RMC_getPosition(gpsPositionSouthEast, &pos));
+    TEST_ASSERT_DOUBLE_WITHIN(0.000001, -32.94165, pos.latitude);
+    TEST_ASSERT_DOUBLE_WITHIN(0.000001, 60.66558333333333, pos.longitude);
+}
+
+void test_gps_getPositionZeroCoordinates(void) {
+    gps_rmc_position_t pos = {0};
+    TEST_ASSERT_EQUAL(ERROR_OK, GPS_PARSER_RMC_getPosition(gpsPositionZeroCoordinates, &pos));
+    TEST_ASSERT_DOUBLE_WITHIN(0.000001, 0.0, pos.latitude);
+    TEST_ASSERT_DOUBLE_WITHIN(0.000001, 0.0, pos.longitude);
+}
+
+void test_gps_getPositionPositiveLimits(void) {
+    gps_rmc_position_t pos = {0};
+    TEST_ASSERT_EQUAL(ERROR_OK, GPS_PARSER_RMC_getPosition(gpsPositionPositiveLimits, &pos));
+    TEST_ASSERT_DOUBLE_WITHIN(0.000001, 90.0, pos.latitude);
+    TEST_ASSERT_DOUBLE_WITHIN(0.000001, 180.0, pos.longitude);
+}
+
+void test_gps_getPositionNegativeLimits(void) {
+    gps_rmc_position_t pos = {0};
+    TEST_ASSERT_EQUAL(ERROR_OK, GPS_PARSER_RMC_getPosition(gpsPositionNegativeLimits, &pos));
+    TEST_ASSERT_DOUBLE_WITHIN(0.000001, -90.0, pos.latitude);
+    TEST_ASSERT_DOUBLE_WITHIN(0.000001, -180.0, pos.longitude);
+}
+
+// === Hora: horas ===
+
 void test_gps_getHour(void) {
     gps_rmc_time_t time = {0};
     TEST_ASSERT_EQUAL(ERROR_OK, GPS_PARSER_RMC_getTime(gpsValidMsg1, &time));
@@ -97,6 +152,8 @@ void test_gps_getHourInvalidDigits(void) {
 void test_gps_getTimeNullOutput(void) {
     TEST_ASSERT_EQUAL(ERROR_INPUT_DATA, GPS_PARSER_RMC_getTime(gpsValidMsg1, NULL));
 }
+
+// === Hora: minutos ===
 
 void test_gps_getMinutes(void) {
     gps_rmc_time_t time = {0};
@@ -135,6 +192,8 @@ void test_gps_getMinutesShortMsg(void) {
     TEST_ASSERT_EQUAL(ERROR_VALIDATION_FAIL, GPS_PARSER_RMC_getTime("GPRMC,192", &time));
 }
 
+// === Hora: segundos ===
+
 void test_gps_getSeconds(void) {
     gps_rmc_time_t time = {0};
     TEST_ASSERT_EQUAL(ERROR_OK, GPS_PARSER_RMC_getTime(gpsValidMsg1, &time));
@@ -171,6 +230,8 @@ void test_gps_getSecondsShortMsg(void) {
     gps_rmc_time_t time = {0};
     TEST_ASSERT_EQUAL(ERROR_VALIDATION_FAIL, GPS_PARSER_RMC_getTime("GPRMC,19244", &time));
 }
+
+// === Hora: milisegundos ===
 
 void test_gps_getMiliseconds(void) {
     gps_rmc_time_t time = {0};
@@ -222,6 +283,8 @@ void test_gps_getMilisecondsShortMsg(void) {
     TEST_ASSERT_EQUAL(ERROR_VALIDATION_FAIL, GPS_PARSER_RMC_getTime("GPRMC,192448.90", &time));
 }
 
+// === Fecha: año ===
+
 void test_gps_getYear(void) {
     gps_rmc_date_t date = {0};
     GPS_PARSER_RMC_getDate(gpsValidMsg1, &date);
@@ -244,6 +307,22 @@ void test_gps_getYearNullInput(void) {
     gps_rmc_date_t date = {0};
     TEST_ASSERT_BITS_HIGH(ERROR_INPUT_DATA, GPS_PARSER_RMC_getDate(NULL, &date));
 }
+
+void test_gps_getYearMin(void) {
+    gps_rmc_date_t date = {0};
+    const char msg[] = "GPRMC,192448.900,A,3256.499,S,06039.935,W,755.8,100.4,101000,000.0,W*75";
+    TEST_ASSERT_EQUAL(ERROR_OK, GPS_PARSER_RMC_getDate(msg, &date));
+    TEST_ASSERT_EQUAL_UINT16(2000, date.year);
+}
+
+void test_gps_getYearMax(void) {
+    gps_rmc_date_t date = {0};
+    const char msg[] = "GPRMC,192448.900,A,3256.499,S,06039.935,W,755.8,100.4,101099,000.0,W*75";
+    TEST_ASSERT_EQUAL(ERROR_OK, GPS_PARSER_RMC_getDate(msg, &date));
+    TEST_ASSERT_EQUAL_UINT16(2099, date.year);
+}
+
+// === Fecha: mes ===
 
 void test_gps_getMonth(void) {
     gps_rmc_date_t date = {0};
@@ -274,6 +353,8 @@ void test_gps_getMonthShortMsg(void) {
     const char msg[] = "GPRMC,192448.900,A,3256.499,S,06039.935,W,755.8,100.4,101,000.0,W*75";
     TEST_ASSERT_BITS_HIGH(ERROR_INPUT_DATA, GPS_PARSER_RMC_getDate(msg, &date));
 }
+
+// === Fecha: día ===
 
 void test_gps_getDay(void) {
     gps_rmc_date_t date = {0};
@@ -326,16 +407,41 @@ void test_gps_getDayInvalidDigits(void) {
     TEST_ASSERT_NOT_EQUAL(ERROR_OK, GPS_PARSER_RMC_getDate(msg, &date));
 }
 
-void test_gps_getYearMin(void) {
-    gps_rmc_date_t date = {0};
-    const char msg[] = "GPRMC,192448.900,A,3256.499,S,06039.935,W,755.8,100.4,101000,000.0,W*75";
-    TEST_ASSERT_EQUAL(ERROR_OK, GPS_PARSER_RMC_getDate(msg, &date));
-    TEST_ASSERT_EQUAL_UINT16(2000, date.year);
+// === Procesamiento de la trama completa ===
+
+void test_gps_processMsgValidFrame1(void) {
+    gps_rmc_data_t data = {0};
+    TEST_ASSERT_EQUAL(ERROR_OK, GPS_PARSER_RMC_processMsg(gpsValidMsg1, &data));
+    TEST_ASSERT_DOUBLE_WITHIN(0.000001, expectedFrame1.position.latitude, data.position.latitude);
+    TEST_ASSERT_DOUBLE_WITHIN(0.000001, expectedFrame1.position.longitude, data.position.longitude);
+    TEST_ASSERT_EQUAL_UINT8(expectedFrame1.time.hours, data.time.hours);
+    TEST_ASSERT_EQUAL_UINT8(expectedFrame1.time.minutes, data.time.minutes);
+    TEST_ASSERT_EQUAL_UINT8(expectedFrame1.time.seconds, data.time.seconds);
+    TEST_ASSERT_EQUAL_UINT16(expectedFrame1.time.miliseconds, data.time.miliseconds);
+    TEST_ASSERT_EQUAL_UINT8(expectedFrame1.date.day, data.date.day);
+    TEST_ASSERT_EQUAL_UINT8(expectedFrame1.date.month, data.date.month);
+    TEST_ASSERT_EQUAL_UINT16(expectedFrame1.date.year, data.date.year);
 }
 
-void test_gps_getYearMax(void) {
-    gps_rmc_date_t date = {0};
-    const char msg[] = "GPRMC,192448.900,A,3256.499,S,06039.935,W,755.8,100.4,101099,000.0,W*75";
-    TEST_ASSERT_EQUAL(ERROR_OK, GPS_PARSER_RMC_getDate(msg, &date));
-    TEST_ASSERT_EQUAL_UINT16(2099, date.year);
+void test_gps_processMsgValidFrame2(void) {
+    gps_rmc_data_t data = {0};
+    TEST_ASSERT_EQUAL(ERROR_OK, GPS_PARSER_RMC_processMsg(gpsValidMsg2, &data));
+    TEST_ASSERT_DOUBLE_WITHIN(0.000001, expectedFrame2.position.latitude, data.position.latitude);
+    TEST_ASSERT_DOUBLE_WITHIN(0.000001, expectedFrame2.position.longitude, data.position.longitude);
+    TEST_ASSERT_EQUAL_UINT8(expectedFrame2.time.hours, data.time.hours);
+    TEST_ASSERT_EQUAL_UINT8(expectedFrame2.time.minutes, data.time.minutes);
+    TEST_ASSERT_EQUAL_UINT8(expectedFrame2.time.seconds, data.time.seconds);
+    TEST_ASSERT_EQUAL_UINT16(expectedFrame2.time.miliseconds, data.time.miliseconds);
+    TEST_ASSERT_EQUAL_UINT8(expectedFrame2.date.day, data.date.day);
+    TEST_ASSERT_EQUAL_UINT8(expectedFrame2.date.month, data.date.month);
+    TEST_ASSERT_EQUAL_UINT16(expectedFrame2.date.year, data.date.year);
+}
+
+void test_gps_processMsgInvalidFrame(void) {
+    gps_rmc_data_t data = {0};
+    TEST_ASSERT_EQUAL(ERROR_VALIDATION_FAIL, GPS_PARSER_RMC_processMsg(gpsInvalidMsg, &data));
+}
+
+void test_gps_processMsgNullOutput(void) {
+    TEST_ASSERT_EQUAL(ERROR_INPUT_DATA, GPS_PARSER_RMC_processMsg(gpsValidMsg1, NULL));
 }

@@ -45,6 +45,28 @@ static const char gpsLatLongOutOfRange1[] =
 static const char gpsLatLongOutOfRange2[] =
     "GPRMC,192451.900,A,9056.711,N,18039.972,W,682.6,282.8,101026,000.0,W*72";
 
+// Casos de posición: rangos, hemisferios, cero y límites.
+static const char gpsPositionLatitudeOutOfRangeOnly[] =
+    "GPRMC,192448.900,A,9100.000,N,06039.935,W,755.8,100.4,101026,000.0,W*66";
+
+static const char gpsPositionLongitudeOutOfRangeOnly[] =
+    "GPRMC,192448.900,A,3256.499,S,18100.000,E,755.8,100.4,101026,000.0,W*6C";
+
+static const char gpsPositionNorthWest[] =
+    "GPRMC,192448.900,A,3256.499,N,06039.935,W,755.8,100.4,101026,000.0,W*68";
+
+static const char gpsPositionSouthEast[] =
+    "GPRMC,192448.900,A,3256.499,S,06039.935,E,755.8,100.4,101026,000.0,W*67";
+
+static const char gpsPositionZeroCoordinates[] =
+    "GPRMC,192448.900,A,0000.000,N,00000.000,E,755.8,100.4,101026,000.0,W*7F";
+
+static const char gpsPositionPositiveLimits[] =
+    "GPRMC,192448.900,A,9000.000,N,18000.000,E,755.8,100.4,101026,000.0,W*7F";
+
+static const char gpsPositionNegativeLimits[] =
+    "GPRMC,192448.900,A,9000.000,S,18000.000,W,755.8,100.4,101026,000.0,W*70";
+
 // Resultados esperados
 static const gps_rmc_data_t expectedFrame1 = {
     .position =
