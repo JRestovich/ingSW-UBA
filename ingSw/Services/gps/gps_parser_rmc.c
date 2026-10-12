@@ -43,6 +43,11 @@
 #define MILISECOND_POS            13
 #define MILISECOND_LENGTH         3
 
+#define CENTURY_21                2000
+#define YEAR_LENGTH               2
+#define DATE_FIELD                9
+#define YEAR_OFFSET               4
+
 /* === Internal data type declarations ===================================================== */
 
 /* === Internal function declarations ====================================================== */
@@ -55,9 +60,9 @@ gsp_error_t _getMinutes(const char *rmc_msg, uint8_t *minute);
 gsp_error_t _getSeconds(const char *rmc_msg, uint8_t *seconds);
 gsp_error_t _getMiliseconds(const char *rmc_msg, uint16_t *miliseconds);
 
-gsp_error_t _getDay(const char *rmc_msg, uint8_t *day);
-gsp_error_t _getMonth(const char *rmc_msg, uint8_t *moth);
 gsp_error_t _getYear(const char *rmc_msg, uint8_t *year);
+gsp_error_t _getMonth(const char *rmc_msg, uint8_t *moth);
+gsp_error_t _getDay(const char *rmc_msg, uint8_t *day);
 
 /* === Internal variable definitions ======================================================= */
 
@@ -243,15 +248,48 @@ gsp_error_t _getMiliseconds(const char *rmc_msg, uint16_t *miliseconds) {
     return ERROR_OK;
 }
 
-gsp_error_t _getDay(const char *rmc_msg, uint8_t *day) {
-    return ERROR_VALIDATION_FAIL;
+gsp_error_t _getYear(const char *rmc_msg, uint8_t *year) {
+    char yy[YEAR_LENGTH + STRING_TERMINATOR_LENGTH] = {0};
+    char *end;
+
+    if (!rmc_msg || !year) {
+        return ERROR_INPUT_DATA;
+    }
+
+    const char *date = rmc_msg;
+    for (unsigned int field = 0; field < DATE_FIELD; field++) {
+        date = strchr(date, ',');
+        if (!date) {
+            return ERROR_VALIDATION_FAIL;
+        }
+        date++;
+    }
+
+    // La posición de la fecha varía con la longitud de velocidad y rumbo.
+    const char *dateEnd = strchr(date, ',');
+    if (!dateEnd || dateEnd - date < YEAR_OFFSET + YEAR_LENGTH) {
+        return ERROR_VALIDATION_FAIL;
+    }
+    if (dateEnd - date != YEAR_OFFSET + YEAR_LENGTH) {
+        return ERROR_INPUT_DATA;
+    }
+
+    strncpy(yy, &date[YEAR_OFFSET], YEAR_LENGTH);
+    unsigned long yyI = strtoul(yy, &end, 10);
+
+    if (!_isDigit(yy[0]) || !_isDigit(yy[1]) || end != yy + YEAR_LENGTH) {
+        return ERROR_INPUT_DATA;
+    }
+
+    *year = CENTURY_21 + (uint8_t)yyI;
+    return ERROR_OK;
 }
 
 gsp_error_t _getMonth(const char *rmc_msg, uint8_t *month) {
     return ERROR_VALIDATION_FAIL;
 }
 
-gsp_error_t _getYear(const char *rmc_msg, uint8_t *year) {
+gsp_error_t _getDay(const char *rmc_msg, uint8_t *year) {
     return ERROR_VALIDATION_FAIL;
 }
 

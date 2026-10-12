@@ -221,3 +221,26 @@ void test_gps_getMilisecondsShortMsg(void) {
     gps_rmc_time_t time = {0};
     TEST_ASSERT_EQUAL(ERROR_VALIDATION_FAIL, GPS_PARSER_RMC_getTime("GPRMC,192448.90", &time));
 }
+
+void test_gps_getYear(void) {
+    gps_rmc_date_t date = {0};
+    GPS_PARSER_RMC_getDate(gpsValidMsg1, &date);
+    TEST_ASSERT_EQUAL_UINT8(expectedFrame1.date.year, date.year);
+}
+
+void test_gps_getYearInvalidDigits(void) {
+    gps_rmc_date_t date = {0};
+    const char msg[] = "GPRMC,192448.900,A,3256.499,S,06039.935,W,755.8,100.4,10102X,000.0,W*75";
+    TEST_ASSERT_BITS_HIGH(ERROR_INPUT_DATA, GPS_PARSER_RMC_getDate(msg, &date));
+}
+
+void test_gps_getYearShortMsg(void) {
+    gps_rmc_date_t date = {0};
+    const char msg[] = "GPRMC,192448.900,A,3256.499,S,06039.935,W,755.8,100.4,10102,000.0,W*75";
+    TEST_ASSERT_BITS_HIGH(ERROR_VALIDATION_FAIL, GPS_PARSER_RMC_getDate(msg, &date));
+}
+
+void test_gps_getYearNullInput(void) {
+    gps_rmc_date_t date = {0};
+    TEST_ASSERT_BITS_HIGH(ERROR_INPUT_DATA, GPS_PARSER_RMC_getDate(NULL, &date));
+}
