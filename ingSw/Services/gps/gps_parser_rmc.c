@@ -34,6 +34,9 @@
 #define HOUR_POS                  6
 #define HOUR_LENGTH               2
 #define MAX_HOUR                  23
+#define MINUTE_POS                8
+#define MINUTE_LENGTH             2
+#define MAX_MINUTE                59
 
 /* === Internal data type declarations ===================================================== */
 
@@ -42,7 +45,7 @@ gsp_error_t _getLatitude(const char *rmc_msg, double *lat);
 gsp_error_t _getLongitude(const char *rmc_msg, double *lon);
 
 gsp_error_t _getHours(const char *rmc_msg, uint8_t *hour);
-gsp_error_t _getMinutes(const char *rmc_msg, uint8_t *hour);
+gsp_error_t _getMinutes(const char *rmc_msg, uint8_t *minute);
 gsp_error_t _getSeconds(const char *rmc_msg, uint8_t *hour);
 gsp_error_t _getMiliseconds(const char *rmc_msg, uint16_t *hour);
 
@@ -147,7 +150,30 @@ gsp_error_t _getHours(const char *rmc_msg, uint8_t *hour) {
     return ERROR_OK;
 }
 
-gsp_error_t _getMinutes(const char *rmc_msg, uint8_t *hour) {
+gsp_error_t _getMinutes(const char *rmc_msg, uint8_t *minute) {
+    char mm[MINUTE_LENGTH + STRING_TERMINATOR_LENGTH] = {0};
+    char *end;
+
+    if (!rmc_msg || !minute) {
+        return ERROR_INPUT_DATA;
+    }
+
+    if (strlen(rmc_msg) < MINUTE_POS + MINUTE_LENGTH) {
+        return ERROR_VALIDATION_FAIL;
+    }
+
+    strncpy(mm, &rmc_msg[MINUTE_POS], MINUTE_LENGTH);
+    unsigned long mmI = strtoul(mm, &end, 10);
+
+    if (mm[0] < '0' || mm[0] > '9' || mm[1] < '0' || mm[1] > '9' || end != mm + MINUTE_LENGTH) {
+        return ERROR_INPUT_DATA;
+    }
+
+    *minute = (uint8_t)mmI;
+    if (*minute > MAX_MINUTE) {
+        return ERROR_MM_OUT_OF_RANGE;
+    }
+    return ERROR_OK;
 }
 
 gsp_error_t _getSeconds(const char *rmc_msg, uint8_t *hour) {
@@ -198,7 +224,10 @@ gsp_error_t GPS_PARSER_RMC_getTime(const char *rmc_msg, gps_rmc_time_t *time) {
 
     err |= _getHours(rmc_msg, &_time.hours);
 
+    err |= _getMinutes(rmc_msg, &_time.minutes);
+
     time->hours = _time.hours;
+    time->minutes = _time.minutes;
     return err;
 }
 

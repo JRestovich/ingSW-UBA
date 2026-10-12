@@ -54,6 +54,7 @@ typedef enum {
     ERROR_LAT_OUT_OF_RANGE = (1U << 4),
     ERROR_LONG_OUT_OF_RANGE = (1U << 5),
     ERROR_HH_OUT_OF_RANGE = (1U << 6),
+    ERROR_MM_OUT_OF_RANGE = (1U << 7),
 } gsp_error_t;
 
 /* === External variable declarations ====================================================== */

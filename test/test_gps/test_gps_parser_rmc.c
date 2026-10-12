@@ -97,3 +97,40 @@ void test_gps_getHourInvalidDigits(void) {
 void test_gps_getTimeNullOutput(void) {
     TEST_ASSERT_EQUAL(ERROR_INPUT_DATA, GPS_PARSER_RMC_getTime(gpsValidMsg1, NULL));
 }
+
+void test_gps_getMinutes(void) {
+    gps_rmc_time_t time = {0};
+    TEST_ASSERT_EQUAL(ERROR_OK, GPS_PARSER_RMC_getTime(gpsValidMsg1, &time));
+    TEST_ASSERT_EQUAL_UINT8(expectedFrame1.time.minutes, time.minutes);
+}
+
+void test_gps_getMinutesZero(void) {
+    gps_rmc_time_t time = {0};
+    const char msg[] = "GPRMC,190048.900,A,";
+    TEST_ASSERT_EQUAL(ERROR_OK, GPS_PARSER_RMC_getTime(msg, &time));
+    TEST_ASSERT_EQUAL_UINT8(0, time.minutes);
+}
+
+void test_gps_getMinutesMax(void) {
+    gps_rmc_time_t time = {0};
+    const char msg[] = "GPRMC,195948.900,A,";
+    TEST_ASSERT_EQUAL(ERROR_OK, GPS_PARSER_RMC_getTime(msg, &time));
+    TEST_ASSERT_EQUAL_UINT8(59, time.minutes);
+}
+
+void test_gps_getMinutesOutOfRange(void) {
+    gps_rmc_time_t time = {0};
+    const char msg[] = "GPRMC,196048.900,A,";
+    TEST_ASSERT_EQUAL(ERROR_MM_OUT_OF_RANGE, GPS_PARSER_RMC_getTime(msg, &time));
+}
+
+void test_gps_getMinutesInvalidDigits(void) {
+    gps_rmc_time_t time = {0};
+    const char msg[] = "GPRMC,192X48.900,A,";
+    TEST_ASSERT_EQUAL(ERROR_INPUT_DATA, GPS_PARSER_RMC_getTime(msg, &time));
+}
+
+void test_gps_getMinutesShortMsg(void) {
+    gps_rmc_time_t time = {0};
+    TEST_ASSERT_EQUAL(ERROR_VALIDATION_FAIL, GPS_PARSER_RMC_getTime("GPRMC,192", &time));
+}
