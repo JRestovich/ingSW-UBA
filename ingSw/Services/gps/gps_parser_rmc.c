@@ -27,6 +27,8 @@
 #define NEGATIVE_COORDINATE_SIGN  (-1.0)
 #define MAX_LATITUDE              (90.0)
 #define MIN_LATITUDE              (-90.0)
+#define MAX_LONGITUDE             (180)
+#define MIN_LONGITUDE             (-180)
 
 /* === Internal data type declarations ===================================================== */
 
@@ -103,6 +105,9 @@ gsp_error_t _getLongitude(char *rmc_msg, double *lon) {
     }
 
     *lon = sign * (degD + minD / MINUTES_PER_DEGREE);
+    if (*lon > MAX_LONGITUDE || *lon < MIN_LONGITUDE) {
+        return ERROR_LONG_OUT_OF_RANGE;
+    }
     return ERROR_OK;
 }
 
@@ -128,24 +133,14 @@ gsp_error_t GPS_PARSER_RMC_getPosition(char *rmc_msg, gps_rmc_position_t *positi
     gps_rmc_position_t pos = {0};
     gsp_error_t err = GPS_PARSER_RMC_isValidMsg(rmc_msg);
 
-    if (err != ERROR_OK) {
-        return err;
-    }
+    err |= _getLatitude(rmc_msg, &pos.latitude);
 
-    err = _getLatitude(rmc_msg, &pos.latitude);
-    if (err != ERROR_OK) {
-        return err;
-    }
-
-    err = _getLongitude(rmc_msg, &pos.longitude);
-    if (err != ERROR_OK) {
-        return err;
-    }
+    err |= _getLongitude(rmc_msg, &pos.longitude);
 
     position->latitude = pos.latitude;
     position->longitude = pos.longitude;
 
-    return ERROR_OK;
+    return err;
 }
 
 void GPS_PARSER_RMC_getTime(char *rmc_msg) {

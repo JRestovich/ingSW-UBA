@@ -46,12 +46,12 @@ typedef struct {
 } gps_rmc_data_t;
 
 typedef enum {
-    ERROR_OK,
-    ERROR_VALIDATION_FAIL,
-    ERROR_VALIDATION_UNKNOW,
-    ERROR_POSITION_INVALID,
-    ERROR_LAT_OUT_OF_RANGE,
-    ERROR_LONG_OUT_OF_RANGE
+    ERROR_OK = 0U,
+    ERROR_VALIDATION_FAIL = (1U << 0),
+    ERROR_VALIDATION_UNKNOW = (1U << 1),
+    ERROR_POSITION_INVALID = (1U << 2),
+    ERROR_LAT_OUT_OF_RANGE = (1U << 3),
+    ERROR_LONG_OUT_OF_RANGE = (1U << 4)
 } gsp_error_t;
 
 /* === External variable declarations ====================================================== */
