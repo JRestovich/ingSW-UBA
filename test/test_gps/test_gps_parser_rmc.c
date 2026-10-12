@@ -73,10 +73,6 @@ void setUp(void) {
 void tearDown(void) {
 }
 
-void test_gps_dummy(void) {
-    TEST_ASSERT_TRUE(1);
-}
-
 void test_gps_validatedData(void) {
     TEST_ASSERT_BITS_HIGH(ERROR_OK, GPS_PARSER_RMC_isValidMsg(&gpsValidMsg1));
 }
