@@ -237,7 +237,7 @@ void test_gps_getYearInvalidDigits(void) {
 void test_gps_getYearShortMsg(void) {
     gps_rmc_date_t date = {0};
     const char msg[] = "GPRMC,192448.900,A,3256.499,S,06039.935,W,755.8,100.4,10102,000.0,W*75";
-    TEST_ASSERT_BITS_HIGH(ERROR_VALIDATION_FAIL, GPS_PARSER_RMC_getDate(msg, &date));
+    TEST_ASSERT_BITS_HIGH(ERROR_INPUT_DATA, GPS_PARSER_RMC_getDate(msg, &date));
 }
 
 void test_gps_getYearNullInput(void) {
@@ -272,7 +272,7 @@ void test_gps_getMonthInvalidDigits(void) {
 void test_gps_getMonthShortMsg(void) {
     gps_rmc_date_t date = {0};
     const char msg[] = "GPRMC,192448.900,A,3256.499,S,06039.935,W,755.8,100.4,101,000.0,W*75";
-    TEST_ASSERT_BITS_HIGH(ERROR_VALIDATION_FAIL, GPS_PARSER_RMC_getDate(msg, &date));
+    TEST_ASSERT_BITS_HIGH(ERROR_INPUT_DATA, GPS_PARSER_RMC_getDate(msg, &date));
 }
 
 void test_gps_getDay(void) {
