@@ -44,6 +44,7 @@
 /* === Internal data type declarations ===================================================== */
 
 /* === Internal function declarations ====================================================== */
+static bool _isDigit(char ch);
 gsp_error_t _getLatitude(const char *rmc_msg, double *lat);
 gsp_error_t _getLongitude(const char *rmc_msg, double *lon);
 
@@ -57,6 +58,10 @@ gsp_error_t _getMiliseconds(const char *rmc_msg, uint16_t *miliseconds);
 /* === External variable definitions ======================================================= */
 
 /* === Internal function definitions ======================================================= */
+static bool _isDigit(char ch) {
+    return ch >= '0' && ch <= '9';
+}
+
 gsp_error_t _getLatitude(const char *rmc_msg, double *lat) {
     char deg[LATITUDE_DEGREES_LENGTH + STRING_TERMINATOR_LENGTH] = {0};
     char min[COORDINATE_MINUTES_LENGTH + STRING_TERMINATOR_LENGTH] = {0};
@@ -142,7 +147,7 @@ gsp_error_t _getHours(const char *rmc_msg, uint8_t *hour) {
     strncpy(hh, &rmc_msg[HOUR_POS], HOUR_LENGTH);
     unsigned long hhI = strtoul(hh, &end, 10);
 
-    if (hh[0] < '0' || hh[0] > '9' || hh[1] < '0' || hh[1] > '9' || end != hh + HOUR_LENGTH) {
+    if (!_isDigit(hh[0]) || !_isDigit(hh[1]) || end != hh + HOUR_LENGTH) {
         return ERROR_INPUT_DATA;
     }
 
@@ -168,7 +173,7 @@ gsp_error_t _getMinutes(const char *rmc_msg, uint8_t *minute) {
     strncpy(mm, &rmc_msg[MINUTE_POS], MINUTE_LENGTH);
     unsigned long mmI = strtoul(mm, &end, 10);
 
-    if (mm[0] < '0' || mm[0] > '9' || mm[1] < '0' || mm[1] > '9' || end != mm + MINUTE_LENGTH) {
+    if (!_isDigit(mm[0]) || !_isDigit(mm[1]) || end != mm + MINUTE_LENGTH) {
         return ERROR_INPUT_DATA;
     }
 
@@ -194,7 +199,7 @@ gsp_error_t _getSeconds(const char *rmc_msg, uint8_t *seconds) {
     strncpy(ss, &rmc_msg[SECOND_POS], SECOND_LENGTH);
     unsigned long ssI = strtoul(ss, &end, 10);
 
-    if (ss[0] < '0' || ss[0] > '9' || ss[1] < '0' || ss[1] > '9' || end != ss + SECOND_LENGTH) {
+    if (!_isDigit(ss[0]) || !_isDigit(ss[1]) || end != ss + SECOND_LENGTH) {
         return ERROR_INPUT_DATA;
     }
 
