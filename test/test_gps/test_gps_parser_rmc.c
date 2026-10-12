@@ -244,3 +244,33 @@ void test_gps_getYearNullInput(void) {
     gps_rmc_date_t date = {0};
     TEST_ASSERT_BITS_HIGH(ERROR_INPUT_DATA, GPS_PARSER_RMC_getDate(NULL, &date));
 }
+
+void test_gps_getMonth(void) {
+    gps_rmc_date_t date = {0};
+    GPS_PARSER_RMC_getDate(gpsValidMsg1, &date);
+    TEST_ASSERT_EQUAL_UINT8(expectedFrame1.date.month, date.month);
+}
+
+void test_gps_getMonthZero(void) {
+    gps_rmc_date_t date = {0};
+    const char msg[] = "GPRMC,192448.900,A,3256.499,S,06039.935,W,755.8,100.4,100026,000.0,W*75";
+    TEST_ASSERT_BITS_HIGH(ERROR_MONTH_OUT_OF_RANGE, GPS_PARSER_RMC_getDate(msg, &date));
+}
+
+void test_gps_getMonthOutOfRange(void) {
+    gps_rmc_date_t date = {0};
+    const char msg[] = "GPRMC,192448.900,A,3256.499,S,06039.935,W,755.8,100.4,101326,000.0,W*75";
+    TEST_ASSERT_BITS_HIGH(ERROR_MONTH_OUT_OF_RANGE, GPS_PARSER_RMC_getDate(msg, &date));
+}
+
+void test_gps_getMonthInvalidDigits(void) {
+    gps_rmc_date_t date = {0};
+    const char msg[] = "GPRMC,192448.900,A,3256.499,S,06039.935,W,755.8,100.4,101X26,000.0,W*75";
+    TEST_ASSERT_BITS_HIGH(ERROR_INPUT_DATA, GPS_PARSER_RMC_getDate(msg, &date));
+}
+
+void test_gps_getMonthShortMsg(void) {
+    gps_rmc_date_t date = {0};
+    const char msg[] = "GPRMC,192448.900,A,3256.499,S,06039.935,W,755.8,100.4,101,000.0,W*75";
+    TEST_ASSERT_BITS_HIGH(ERROR_VALIDATION_FAIL, GPS_PARSER_RMC_getDate(msg, &date));
+}

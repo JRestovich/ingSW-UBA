@@ -47,6 +47,10 @@
 #define YEAR_LENGTH               2
 #define DATE_FIELD                9
 #define YEAR_OFFSET               4
+#define MONTH_POS                 56
+#define MONTH_LENGTH              2
+#define MIN_MONTH                 1
+#define MAX_MONTH                 12
 
 /* === Internal data type declarations ===================================================== */
 
@@ -61,7 +65,7 @@ gsp_error_t _getSeconds(const char *rmc_msg, uint8_t *seconds);
 gsp_error_t _getMiliseconds(const char *rmc_msg, uint16_t *miliseconds);
 
 gsp_error_t _getYear(const char *rmc_msg, uint8_t *year);
-gsp_error_t _getMonth(const char *rmc_msg, uint8_t *moth);
+gsp_error_t _getMonth(const char *rmc_msg, uint8_t *month);
 gsp_error_t _getDay(const char *rmc_msg, uint8_t *day);
 
 /* === Internal variable definitions ======================================================= */
@@ -286,7 +290,29 @@ gsp_error_t _getYear(const char *rmc_msg, uint8_t *year) {
 }
 
 gsp_error_t _getMonth(const char *rmc_msg, uint8_t *month) {
-    return ERROR_VALIDATION_FAIL;
+    char mm[MONTH_LENGTH + STRING_TERMINATOR_LENGTH] = {0};
+    char *end;
+
+    if (!rmc_msg || !month) {
+        return ERROR_INPUT_DATA;
+    }
+
+    if (strlen(rmc_msg) < MONTH_POS + MONTH_LENGTH) {
+        return ERROR_VALIDATION_FAIL;
+    }
+
+    strncpy(mm, &rmc_msg[MONTH_POS], MONTH_LENGTH);
+    unsigned long mmI = strtoul(mm, &end, 10);
+
+    if (!_isDigit(mm[0]) || !_isDigit(mm[1]) || end != mm + MONTH_LENGTH) {
+        return ERROR_INPUT_DATA;
+    }
+
+    *month = (uint8_t)mmI;
+    if (*month < MIN_MONTH || *month > MAX_MONTH) {
+        return ERROR_MONTH_OUT_OF_RANGE;
+    }
+    return ERROR_OK;
 }
 
 gsp_error_t _getDay(const char *rmc_msg, uint8_t *year) {
