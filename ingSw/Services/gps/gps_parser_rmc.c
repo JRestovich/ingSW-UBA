@@ -37,6 +37,9 @@
 #define MINUTE_POS                8
 #define MINUTE_LENGTH             2
 #define MAX_MINUTE                59
+#define SECOND_POS                10
+#define SECOND_LENGTH             2
+#define MAX_SECOND                59
 
 /* === Internal data type declarations ===================================================== */
 
@@ -46,8 +49,8 @@ gsp_error_t _getLongitude(const char *rmc_msg, double *lon);
 
 gsp_error_t _getHours(const char *rmc_msg, uint8_t *hour);
 gsp_error_t _getMinutes(const char *rmc_msg, uint8_t *minute);
-gsp_error_t _getSeconds(const char *rmc_msg, uint8_t *hour);
-gsp_error_t _getMiliseconds(const char *rmc_msg, uint16_t *hour);
+gsp_error_t _getSeconds(const char *rmc_msg, uint8_t *seconds);
+gsp_error_t _getMiliseconds(const char *rmc_msg, uint16_t *miliseconds);
 
 /* === Internal variable definitions ======================================================= */
 
@@ -176,10 +179,33 @@ gsp_error_t _getMinutes(const char *rmc_msg, uint8_t *minute) {
     return ERROR_OK;
 }
 
-gsp_error_t _getSeconds(const char *rmc_msg, uint8_t *hour) {
+gsp_error_t _getSeconds(const char *rmc_msg, uint8_t *seconds) {
+    char ss[SECOND_LENGTH + STRING_TERMINATOR_LENGTH] = {0};
+    char *end;
+
+    if (!rmc_msg || !seconds) {
+        return ERROR_INPUT_DATA;
+    }
+
+    if (strlen(rmc_msg) < SECOND_POS + SECOND_LENGTH) {
+        return ERROR_VALIDATION_FAIL;
+    }
+
+    strncpy(ss, &rmc_msg[SECOND_POS], SECOND_LENGTH);
+    unsigned long ssI = strtoul(ss, &end, 10);
+
+    if (ss[0] < '0' || ss[0] > '9' || ss[1] < '0' || ss[1] > '9' || end != ss + SECOND_LENGTH) {
+        return ERROR_INPUT_DATA;
+    }
+
+    *seconds = (uint8_t)ssI;
+    if (*seconds > MAX_SECOND) {
+        return ERROR_SS_OUT_OF_RANGE;
+    }
+    return ERROR_OK;
 }
 
-gsp_error_t _getMiliseconds(const char *rmc_msg, uint16_t *hour) {
+gsp_error_t _getMiliseconds(const char *rmc_msg, uint16_t *miliseconds) {
 }
 
 /* === External function definitions ======================================================= */
@@ -226,8 +252,11 @@ gsp_error_t GPS_PARSER_RMC_getTime(const char *rmc_msg, gps_rmc_time_t *time) {
 
     err |= _getMinutes(rmc_msg, &_time.minutes);
 
+    err |= _getSeconds(rmc_msg, &_time.seconds);
+
     time->hours = _time.hours;
     time->minutes = _time.minutes;
+    time->seconds = _time.seconds;
     return err;
 }
 
