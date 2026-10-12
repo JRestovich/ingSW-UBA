@@ -28,7 +28,7 @@ extern "C" {
 
 gsp_error_t GPS_PARSER_RMC_isValidMsg(const char *rmc_msg);
 
-void GPS_PARSER_RMC_processMsg(const char *rmc_msg);
+gsp_error_t GPS_PARSER_RMC_processMsg(const char *rmc_msg, gps_rmc_data_t *data);
 
 gsp_error_t GPS_PARSER_RMC_getPosition(const char *rmc_msg, gps_rmc_position_t *position);
 

@@ -386,7 +386,19 @@ gsp_error_t GPS_PARSER_RMC_isValidMsg(const char *rmc_msg) {
     }
 }
 
-void GPS_PARSER_RMC_processMsg(const char *rmc_msg) {
+gsp_error_t GPS_PARSER_RMC_processMsg(const char *rmc_msg, gps_rmc_data_t *data) {
+    if (!data) {
+        return ERROR_INPUT_DATA;
+    }
+
+    gps_rmc_data_t parsedData = {0};
+    gsp_error_t err = GPS_PARSER_RMC_getPosition(rmc_msg, &parsedData.position);
+
+    err |= GPS_PARSER_RMC_getTime(rmc_msg, &parsedData.time);
+    err |= GPS_PARSER_RMC_getDate(rmc_msg, &parsedData.date);
+
+    *data = parsedData;
+    return err;
 }
 
 gsp_error_t GPS_PARSER_RMC_getPosition(const char *rmc_msg, gps_rmc_position_t *position) {
