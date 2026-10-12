@@ -11,7 +11,20 @@
 #include <string.h>
 
 /* === Definitions and macros ============================================================== */
-#define VALIDATION_POS 17
+#define VALIDATION_POS            17
+#define LATITUDE_DEGREES_POS      19
+#define LATITUDE_MINUTES_POS      21
+#define LATITUDE_HEMISPHERE_POS   28
+#define LONGITUDE_DEGREES_POS     30
+#define LONGITUDE_MINUTES_POS     33
+#define LONGITUDE_HEMISPHERE_POS  40
+#define LATITUDE_DEGREES_LENGTH   2
+#define LONGITUDE_DEGREES_LENGTH  3
+#define COORDINATE_MINUTES_LENGTH 6
+#define STRING_TERMINATOR_LENGTH  1
+#define MINUTES_PER_DEGREE        60.0
+#define POSITIVE_COORDINATE_SIGN  1.0
+#define NEGATIVE_COORDINATE_SIGN  (-1.0)
 /* === Internal data type declarations ===================================================== */
 
 /* === Internal function declarations ====================================================== */
@@ -24,70 +37,66 @@ gsp_error_t _getLongitude(char *rmc_msg, double *lon);
 
 /* === Internal function definitions ======================================================= */
 gsp_error_t _getLatitude(char *rmc_msg, double *lat) {
-    char deg[3] = {0};
-    char min[7] = {0};
+    char deg[LATITUDE_DEGREES_LENGTH + STRING_TERMINATOR_LENGTH] = {0};
+    char min[COORDINATE_MINUTES_LENGTH + STRING_TERMINATOR_LENGTH] = {0};
     char *end;
-    double dec, uni;
 
     if (!rmc_msg || !lat) {
         return ERROR_POSITION_INVALID;
     }
 
-    if (strlen(rmc_msg) <= 28) { // largo total
+    if (strlen(rmc_msg) <= LATITUDE_HEMISPHERE_POS) {
         return ERROR_VALIDATION_FAIL;
     }
 
-    dec = (rmc_msg[19] - '0') * 10;
-    uni = rmc_msg[20] - '0';
-
-    strncpy(deg, &rmc_msg[19], 2);
+    strncpy(deg, &rmc_msg[LATITUDE_DEGREES_POS], LATITUDE_DEGREES_LENGTH);
     double degD = strtod(deg, &end);
 
-    strncpy(min, &rmc_msg[21], 6);
+    strncpy(min, &rmc_msg[LATITUDE_MINUTES_POS], COORDINATE_MINUTES_LENGTH);
     double minD = strtod(min, &end);
 
     double sign;
-    if (rmc_msg[28] == 'N') {
-        sign = 1;
-    } else if (rmc_msg[28] == 'S') {
-        sign = -1;
+    if (rmc_msg[LATITUDE_HEMISPHERE_POS] == 'N') {
+        sign = POSITIVE_COORDINATE_SIGN;
+    } else if (rmc_msg[LATITUDE_HEMISPHERE_POS] == 'S') {
+        sign = NEGATIVE_COORDINATE_SIGN;
     } else {
         return ERROR_POSITION_INVALID;
     }
 
-    *lat = sign * (degD + minD / 60.0);
+    *lat = sign * (degD + minD / MINUTES_PER_DEGREE);
     return ERROR_OK;
 }
 
 gsp_error_t _getLongitude(char *rmc_msg, double *lon) {
-    char deg[4] = {0};
-    char min[7] = {0};
+    char deg[LONGITUDE_DEGREES_LENGTH + STRING_TERMINATOR_LENGTH] = {0};
+    char min[COORDINATE_MINUTES_LENGTH + STRING_TERMINATOR_LENGTH] = {0};
     char *end;
 
     if (!rmc_msg || !lon) {
         return ERROR_POSITION_INVALID;
     }
 
-    if (strlen(rmc_msg) <= 40) {
+    if (strlen(rmc_msg) <= LONGITUDE_HEMISPHERE_POS) {
         return ERROR_VALIDATION_FAIL;
     }
 
-    strncpy(deg, &rmc_msg[30], 3);
+    strncpy(deg, &rmc_msg[LONGITUDE_DEGREES_POS], LONGITUDE_DEGREES_LENGTH);
     double degD = strtod(deg, &end);
 
-    strncpy(min, &rmc_msg[33], 6);
+    strncpy(min, &rmc_msg[LONGITUDE_MINUTES_POS], COORDINATE_MINUTES_LENGTH);
     double minD = strtod(min, &end);
 
     double sign;
-    if (rmc_msg[40] == 'E') {
-        sign = 1;
-    } else if (rmc_msg[40] == 'W') {
-        sign = -1;
+    if (rmc_msg[LONGITUDE_HEMISPHERE_POS] == 'E') {
+        sign = POSITIVE_COORDINATE_SIGN;
+    } else if (rmc_msg[LONGITUDE_HEMISPHERE_POS] == 'W') {
+        sign = NEGATIVE_COORDINATE_SIGN;
     } else {
         return ERROR_POSITION_INVALID;
     }
 
-    *lon = sign * (degD + minD / 60.0);
+    *lon = sign * (degD + minD / MINUTES_PER_DEGREE);
     return ERROR_OK;
 }
 
