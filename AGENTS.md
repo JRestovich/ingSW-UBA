@@ -10,7 +10,11 @@
 ## Restricciones específicas para GPS STT
 
 - Trabajá exclusivamente en la rama local `gps_stt`. Comprobá `git branch --show-current` antes de editar. Si no coincide, detenete: no cambies de rama ni crees otra sin confirmación.
-- Reutilizá `ring_buffer.h` y `ring_buffer.c` existentes; no implementes un segundo ring buffer.
+- Reutilizá `ring_buffer.h` y `ring_buffer.c` existentes con **128 bytes de almacenamiento (127 útiles)**. No implementes otro ring buffer ni cambies su módulo para esta tarea.
+- Ubicá recepción, FSM, detección, validación de checksum y dispatcher en `ingSw/Services/gps/gps_parser.c/.h`; crealos si faltan. `gps_parser_rmc.c/.h` queda exclusivamente para decodificación RMC, conservando su API y comportamiento.
+- Aplicá `.clang-format` desde el primer cambio y dejá una línea vacía entre funciones, también en tests. Conservá el formato de secciones del proyecto.
+- NMEA usa checksum XOR, no CRC. Validá antes de despachar al parser específico. El dispatcher debe permitir incorporar otros tipos sin modificar la FSM ni duplicar validación.
+- Los tests deben verificar llamadas al parser RMC con mocks/spies, además de resultados de integración. Cero callbacks no demuestra cero llamadas al decodificador.
 - Implementá la nueva FSM de tres estados (IDLE, FI, FE) de acuerdo con la especificación y conservá el procesamiento RMC existente salvo incompatibilidad demostrada.
 - El marcador de inicio de sentencia GNSS NMEA es **`$` (ASCII 0x24)**, no `!`; `\r\n` es el terminador. Los casos STT y fixtures deben usar ese marcador.
 - Agregá los casos derivados de STT al archivo existente `test/test_gps/test_gps_parser.c`; verificá la ruta real antes de editar. No crees una suite paralela.

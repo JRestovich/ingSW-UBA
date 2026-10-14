@@ -1,6 +1,6 @@
 # Especificación de implementación — GPS Parser FSM y pruebas STT
 
-**Estado:** contrato de implementación para Codex, todavía no validado contra el repositorio ni ejecutado.
+**Estado:** contrato revisado para una nueva ejecución; resultados y cobertura deben obtenerse nuevamente.
 **Rama de trabajo:** `gps_stt` (solo local).
 **Orden obligatorio:** Fase A (FSM e integración) → verificación de compilación → Fase B (tests STT) → ejecución, correcciones y revisión final.
 **Fuente:** análisis STT acordado para el parser GPS en esta conversación; no sustituye la inspección de las APIs reales del repositorio.
@@ -12,11 +12,11 @@ Implementar en el módulo GPS existente una máquina de estados para recolectar 
 **Obligatorio**
 
 - Reutilizar `ring_buffer.h` y `ring_buffer.c` **existentes** del repositorio. Inspeccionar sus firmas, capacidad, ownership y semántica; no crear otro ring buffer ni duplicar su implementación.
-- El ring buffer de recepción está especificado con **164 bytes de capacidad**. Verificar cómo se configura/instancia en el código real, y adaptar la configuración existente de forma mínima; distinguir desbordamiento del ring buffer y desbordamiento de *trama* (máximo 82 bytes).
+- Usar el ring buffer existente con **128 bytes de almacenamiento y 127 bytes útiles**, conforme a su contrato de tamaño potencia de dos y un slot reservado. No modificar ring_buffer.h/.c ni confundir esta capacidad con el máximo de trama de 82 bytes. Drenar antes de sobrescritura al consumir lotes mayores a 127, conservando orden y datos.
 - FSM de **tres estados exclusivamente**: `IDLE`, `FI` (find init) y `FE` (find end).
 - Integrar la validación XOR/checksum y el despacho de RMC respetando módulos, funciones e interfaces existentes; no reescribir el parser RMC sin justificación demostrable.
-- El codigo de produccion estara en ingSw/Services/gps/gps_parser_rmc.c y ingSw/Services/gps/gps_parser_rmc.h y debe usar el mismo formato de la plantilla con sus diferentes secciones.
-- Para las funciones publicas  respeta el formato GPS_PARSER_... y para el nombre de las funciones privadas usa el prefijo '_'.
+- Recepción, FSM, detección de trama, validación de formato/checksum y dispatcher deben estar en **ingSw/Services/gps/gps_parser.c y gps_parser.h**. Crear estos archivos si faltan. **gps_parser_rmc.c/.h se limita a decodificar RMC** y debe conservar sus interfaces. Usar las secciones de la plantilla del proyecto.
+- Para funciones públicas usar el prefijo `GPS_PARSER_`; para privadas, `_`. Aplicar `.clang-format` y dejar una línea vacía entre funciones, también en tests. Verificar con `clang-format --dry-run --Werror --style=file` sobre los archivos C/H modificados.
 - Introducir todos los nuevos tests STT **en el archivo existente** `test/test_gps/test_gps_parser.c`. Confirmar ruta antes de editar; si difiere, documentarlo y modificar el equivalente existente, sin crear suite paralela.
 - Mantener el alcance en GPS y las mínimas dependencias necesarias; no introducir timeouts ni un cuarto estado.
 - Escribir commits **locales, pequeños y claros**, sin push, merge, PR o comandos destructivos. Respetar siempre los permisos vigentes.
@@ -25,8 +25,9 @@ Implementar en el módulo GPS existente una máquina de estados para recolectar 
 **Aspectos a comprobar antes de codificar**
 
 1. Nombres reales de módulos, APIs públicas, ring buffer, callbacks, funciones de checksum y parser RMC.
-2. Si la recepción comienza automáticamente o con un evento explícito de inicialización (`RX_READY`).
-5. **Marcador confirmado para GNSS NMEA 0183:** usar **`$` (ASCII 0x24)** como único delimitador de inicio para RMC y las demás sentencias GNSS en alcance. El marcador `!` no está habilitado en este proyecto; si aparece en código o fixtures heredados, corregirlos o aislarlos según su alcance y documentar el cambio. No solicitar aprobación por la antigua discrepancia: quedó resuelta por decisión del usuario.
+2. API de recepción existente: si no hay ninguna, diseñar una API mínima de producción con contexto, inicialización en IDLE, activación explícita RX_READY idempotente y entrada de lotes de bytes. Esto está autorizado; no crear APIs de inyección de eventos ni getters solo para tests. Documentar ownership, callback y serialización. No se exige integrar hardware UART/ISR en esta tarea.
+3. Configuración Ceedling: se autoriza incorporar rutas de Core/Inc y el archivo Core/Src/ring_buffer.c como dependencia mínima. Enlazar el colector y el decoder por separado; no introducir dependencias del ring buffer en el módulo RMC.
+4. **Marcador confirmado para GNSS NMEA 0183:** usar **`$` (ASCII 0x24)** como único delimitador de inicio para RMC y las demás sentencias GNSS en alcance. El marcador `!` no está habilitado en este proyecto; si aparece en código o fixtures heredados, corregirlos o aislarlos según su alcance y documentar el cambio. No solicitar aprobación por la antigua discrepancia: quedó resuelta por decisión del usuario.
 
 ## 2. Modelo FSM acordado
 
@@ -82,7 +83,7 @@ Implementar en el módulo GPS existente una máquina de estados para recolectar 
 - Prioridad sugerida al procesar cada byte en FE: 1) `START` (`$`) → T3; 2) determinar si el byte completa `\r\n`; 3) comprobar si hay capacidad para incorporar el byte (si no, T7); 4) incorporarlo; 5) si completa `\r\n`, T6; en otro caso T5. La implementación puede optimizar el orden **solo** si conserva las mismas propiedades en los límites.
 - Si el byte 82 no completa la secuencia y el byte 83 es `\n`, **no** aceptar la trama: excede el máximo.
 - Después de T6 o T7, volver a `FI` y poder reconocer la siguiente trama sin volver a `IDLE`.
-- Distinguir `ring buffer overflow` de `frame overflow` y no confundir las capacidades 164 / 82.
+- Distinguir `ring buffer overflow` de `frame overflow` y no confundir las capacidades 128 de almacenamiento / 127 útiles / 82 de trama.
 
 ### Validación y despacho tras T6
 
@@ -90,10 +91,20 @@ Implementar en el módulo GPS existente una máquina de estados para recolectar 
 2. Validar checksum NMEA mediante XOR de los bytes de la carga entre marcador de inicio y `*` (sin incluir esos delimitadores), comparándolo con sus dos dígitos hexadecimales. Conservar comportamiento existente correcto.
 3. Si el checksum es inválido, descartar **sin llamar al parser RMC**.
 4. Si checksum válido pero tipo no soportado, descartar sin llamar al parser RMC.
-5. Si es tipo RMC soportado, invocar al decodificador/despachador ya existente y propagar solo datos válidos conforme a la API existente.
+5. Si es tipo RMC soportado, delegar en `GPS_PARSER_RMC_processMsg` del módulo existente y propagar solo datos válidos. Adaptar la entrada a su contrato real (el decoder actual recibe el cuerpo sin `$`).
 6. La decisión checksum/RMC es una **acción asociada a T6**, no un estado nuevo de la FSM.
 
 No inventar API pública nueva solo para satisfacer los tests. Usar mocks/spies de los colaboradores ya existentes, o helpers internos mínimos cuando resulten justificables.
+
+### Responsabilidades y extensión del dispatcher
+
+- NMEA utiliza **checksum XOR, no CRC**. La validación común pertenece a gps_parser.
+- Tras T6: validar estructura y checksum, identificar tipo y consultar un dispatcher interno. Inicialmente soportar GPRMC y GNRMC; distinguir talker ID GP/GN del tipo RMC. Otros talkers/tipos quedan no soportados.
+- Usar una tabla interna de tipos soportados y handlers, o estructura equivalente que permita agregar un módulo y una entrada sin cambiar la FSM. No añadir registro dinámico público, plugins ni parsers futuros.
+- Los handlers se ejecutan únicamente después de validación común. Un adapter RMC puede convertir el contrato de entrada/salida sin reescribir el decoder.
+- Verificar cero llamadas al decoder ante checksum incorrecto, estructura inválida o tipo no soportado; una llamada para RMC válido; dos llamadas en orden para dos tramas.
+- Planificar antes de codificar la estrategia de mocks/spies de Ceedling sobre gps_parser_rmc. Los colaboradores ahora están en módulos distintos. No sustituir el oráculo de llamadas por conteo de callbacks ni por revisión de código.
+- Mantener además integración con el decoder real y fixtures existentes. Todas las pruebas nuevas viven en test_gps_parser.c; si se necesitan builds separados para mocks e integración, se autoriza configuración mínima de Ceedling, documentando comandos y modo. No crear suites paralelas ni modificar comportamiento de producción para instrumentar pruebas.
 
 ## 3. Árbol de transiciones STT (Paso 2)
 
@@ -132,10 +143,12 @@ En STT-09, construir una sentencia de 82 bytes **realmente compatible con el par
 
 ### Vectores de entrada base (para tests concretos)
 
+Los vectores siguientes son referencias NMEA, no garantías de compatibilidad con el decoder de posiciones fijas del repositorio. Para pruebas positivas de decodificación, priorizar gps_test_data.h y reconstruir `$`, checksum verificado y CRLF; no reescribir el decoder para admitir estos ejemplos.
+
 Los siguientes ejemplos utilizan el delimitador estándar **`$`** confirmado para GNSS NMEA. El checksum XOR se calcula únicamente sobre el cuerpo entre `$` y `*`; cambiar el delimitador no modifica el valor calculado.
 
 ```c
-// 70 bytes en total; checksum XOR de la carga = 0x6A.
+// Vector NMEA de referencia; verificar longitud y checksum antes de usarlo.
 "$GPRMC,123519,A,4807.038,N,01131.000,E,022.4,084.4,230394,003.1,W*6A\r\n"
 
 // Tipo diferente de RMC, checksum correcto (0x47):
@@ -164,7 +177,7 @@ Los siguientes ejemplos utilizan el delimitador estándar **`$`** confirmado par
 
 Además, en `FI`, bytes `\r` y `\n` (incluso consecutivos) son ruido tratado por T4, **no un evento END ilegal despachable**. Registrar con claridad qué IL-xx se automatiza, cuáles son inalcanzables y por qué.
 
-## 6. Pruebas complementarias de guardas y bordes (sugeridas)
+## 6. Pruebas complementarias de guardas y bordes (obligatorias cuando alcanzables)
 
 Este grupo **no reemplaza** las 9 legales y 6 ilegales acordadas. Implementar las alcanzables con la API real, priorizando que los límites se demuestren mediante aserciones.
 
@@ -180,6 +193,8 @@ Este grupo **no reemplaza** las 9 legales y 6 ilegales acordadas. Implementar la
 | **B-08** | Sentencia inválida seguida inmediatamente de válida | Recuperación y despacho de la segunda. |
 | **B-09** | Ruido en FI con caracteres de fin `\r`/`\n` | Sin validación ni despacho. |
 
+Además verificar: LF que intentaría cerrar en byte 83 se rechaza; lote de dos tramas mayor a 127 no pierde datos; sintaxis checksum inválida no llama al decoder; GPRMC y GNRMC despachan correctamente; errores del decoder no se propagan como resultados válidos.
+
 Para fixtures, usar la utilidad de checksum existente o helper local en `test_gps_parser.c`, pero **nunca fabricar un checksum fijo sin verificarlo**. Cualquier caso que no pueda ejecutarse se marca claramente como `NO EJECUTADO` y se explica su motivo.
 
 ## 7. Plan de trabajo que debe ejecutar Codex
@@ -190,7 +205,7 @@ Para fixtures, usar la utilidad de checksum existente o helper local en `test_gp
 2. Localizar y leer código GPS, ring buffer y dispatcher RMC. Verificar que el delimitador de inicio en implementación, fixtures y tests sea `$` conforme al requisito confirmado; documentar y corregir referencias heredadas a `!` cuando sean parte del flujo GNSS.
 3. Anotar la API existente y un plan breve en `docs/STT_AGENT_PROGRESS.md`.
 4. Implementar los **tres** estados y las transiciones T1–T7 con la semántica de §2.
-5. Reutilizar el ring buffer existente de 164 bytes y el buffer lógico de trama de hasta 82 bytes.
+5. Reutilizar el ring buffer existente con 128 bytes de almacenamiento (127 útiles) y el buffer lógico de trama de hasta 82 bytes.
 6. Compilar y ejecutar las pruebas de regresión existentes. Registrar comando, salida resumida y estado real; corregir problemas introducidos por la FSM.
 7. Si los permisos lo permiten, commitear cambios de producción en unidades pequeñas, con nombres claros. Si no, documentar commits propuestos y dejar el árbol de trabajo intacto.
 8. **Continuar automáticamente a Fase B** cuando el código compile/esté verificable y no exista una decisión de requisitos pendiente; no esperar aprobación humana por defecto.
@@ -226,8 +241,12 @@ Se considera implementada la modificación **solo si se verifica** que:
 - [ ] `\r\n` funciona incluso si llega en diferentes lecturas.
 - [ ] Una sentencia de 82 bytes con terminador completo llega a validación y no produce overflow.
 - [ ] El overflow ocurre **solamente al intentar byte 83** en trama sin cierre; T3 puede resincronizar aun cuando haya 82 bytes pendientes.
-- [ ] El ring buffer usa el módulo existente `ring_buffer.h/.c` y su capacidad prevista (164 bytes), sin duplicación.
-- [ ] Checksum inválido y sentencia no RMC no invocan al parser RMC; sentencia RMC válida sí.
+- [ ] El ring buffer usa el módulo existente `ring_buffer.h/.c` y 128 bytes de almacenamiento (127 útiles), sin duplicación.
+- [ ] Checksum inválido y sentencia no RMC no invocan al parser RMC; sentencia RMC válida sí, demostrado con mocks/spies y conteo de llamadas.
+- [ ] FSM y dispatcher están en gps_parser.c/.h; RMC conserva responsabilidad de decodificación y API.
+- [ ] El dispatcher permite incorporar otros tipos agregando un handler/entrada sin cambiar FSM ni duplicar checksum.
+- [ ] Pruebas de integración con el decoder real y fixtures existentes pasan.
+- [ ] `.clang-format` y línea vacía entre funciones verificados.
 - [ ] Todos los casos legales implementables están dentro de `test_gps_parser.c`, con resultados evidenciados.
 - [ ] IL-xx no alcanzables están documentados, no disimulados como tests aprobados.
 - [ ] La suite ejecutable relevante pasa, o las fallas quedan diagnosticadas y registradas como pendientes, sin falsos positivos.

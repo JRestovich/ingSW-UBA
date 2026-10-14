@@ -1,13 +1,13 @@
 # GPS STT — Registro de ejecución de Codex
 
-> Este archivo es una plantilla. Codex debe completarlo con datos observados, no supuestos.
+> Plantilla reiniciada para la próxima ejecución. No hay resultados del intento anterior que puedan atribuirse a una nueva implementación. Completar solo con evidencia de esa ejecución.
 
 ## Datos iniciales
 - Fecha y hora:
 - Rama (`git branch --show-current`):
 - Estado inicial de Git:
 - Versión/entorno de Ceedling:
-- Ruta verificada de FSM GPS:
+- Ruta verificada de FSM GPS (destino obligatorio: ingSw/Services/gps/gps_parser.c/.h):
 - Ruta verificada del ring buffer:
 - Ruta verificada del archivo de pruebas:
 
@@ -17,6 +17,9 @@
 - [ ] Build / regresión de FSM
 - [ ] Tests STT incorporados
 - [ ] Tests ejecutados y fallos analizados
+- [ ] Integración con decoder real y verificación de llamadas con mocks/spies
+- [ ] Dispatcher extensible sin nuevos parsers
+- [ ] .clang-format y línea vacía entre funciones
 - [ ] Revisión y entrega final
 
 ## Registro de actividades
@@ -29,6 +32,14 @@
 - Casos aprobados:
 - Casos fallidos:
 - Casos no ejecutados y motivo:
+
+## Decisiones de implementación (completar antes de editar)
+- API mínima de recepción y ownership:
+- Entrada esperada por decoder RMC y adapter:
+- Dispatcher y mecanismo para agregar tipos:
+- Estrategia mocks/spies para conteo de llamadas y estrategia de integración:
+- Comandos Ceedling para cada modo de pruebas:
+- Ring buffer: almacenamiento 128 / capacidad útil 127; estrategia para lotes mayores:
 
 ## Bloqueos y decisiones pendientes
 -
