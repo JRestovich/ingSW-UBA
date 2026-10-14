@@ -13,18 +13,19 @@ Implementar en el módulo GPS existente una máquina de estados para recolectar 
 
 - Reutilizar `ring_buffer.h` y `ring_buffer.c` **existentes** del repositorio. Inspeccionar sus firmas, capacidad, ownership y semántica; no crear otro ring buffer ni duplicar su implementación.
 - El ring buffer de recepción está especificado con **164 bytes de capacidad**. Verificar cómo se configura/instancia en el código real, y adaptar la configuración existente de forma mínima; distinguir desbordamiento del ring buffer y desbordamiento de *trama* (máximo 82 bytes).
-- FSM de **tres estados exclusivamente**: `IDLE`, `FI` (find/init frame) y `FE` (frame extraction).
+- FSM de **tres estados exclusivamente**: `IDLE`, `FI` (find init) y `FE` (find end).
 - Integrar la validación XOR/checksum y el despacho de RMC respetando módulos, funciones e interfaces existentes; no reescribir el parser RMC sin justificación demostrable.
+- El codigo de produccion estara en ingSw/Services/gps/gps_parser_rmc.c y ingSw/Services/gps/gps_parser_rmc.h y debe usar el mismo formato de la plantilla con sus diferentes secciones.
+- Para las funciones publicas  respeta el formato GPS_PARSER_... y para el nombre de las funciones privadas usa el prefijo '_'.
 - Introducir todos los nuevos tests STT **en el archivo existente** `test/test_gps/test_gps_parser.c`. Confirmar ruta antes de editar; si difiere, documentarlo y modificar el equivalente existente, sin crear suite paralela.
 - Mantener el alcance en GPS y las mínimas dependencias necesarias; no introducir timeouts ni un cuarto estado.
 - Escribir commits **locales, pequeños y claros**, sin push, merge, PR o comandos destructivos. Respetar siempre los permisos vigentes.
+- reutiliza los datos de prueba 'test/test_gps/gps_data/gps_test_data.h' todo lo posible antes de agregar nuevos inputs, solo agrega nueva en caso de ser necesaria
 
 **Aspectos a comprobar antes de codificar**
 
 1. Nombres reales de módulos, APIs públicas, ring buffer, callbacks, funciones de checksum y parser RMC.
 2. Si la recepción comienza automáticamente o con un evento explícito de inicialización (`RX_READY`).
-3. Ruta y comando real de Ceedling en este repositorio (no asumir que `ceedling test:all` funciona hasta comprobarlo).
-4. Cambios locales preexistentes y rama activa (`git branch --show-current` debe devolver `gps_stt`). No sobrescribir ni commitear trabajo ajeno.
 5. **Marcador confirmado para GNSS NMEA 0183:** usar **`$` (ASCII 0x24)** como único delimitador de inicio para RMC y las demás sentencias GNSS en alcance. El marcador `!` no está habilitado en este proyecto; si aparece en código o fixtures heredados, corregirlos o aislarlos según su alcance y documentar el cambio. No solicitar aprobación por la antigua discrepancia: quedó resuelta por decisión del usuario.
 
 ## 2. Modelo FSM acordado
