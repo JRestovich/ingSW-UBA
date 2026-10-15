@@ -7,8 +7,6 @@
 
 /* === Internal function declarations ====================================================== */
 
-static void _processByte(gps_parser_t *parser, char byte);
-
 /* === Internal variable definitions ======================================================= */
 
 /* === Internal function definitions ======================================================= */
@@ -54,28 +52,19 @@ static void _dispatch(gps_parser_t *parser) {
         return;
     }
 
-    /* NMEA identifier: two-character talker followed by three-character type. */
-    if (frame[6] != ',') {
+    /* Accept any two-letter talker; only RMC is supported. */
+    if (frame[1] < 'A' || frame[1] > 'Z' || frame[2] < 'A' || frame[2] > 'Z' || frame[6] != ',') {
         return;
     }
-    char sentence[6];
-    memcpy(sentence, frame + 1, sizeof(sentence) - 1);
-    sentence[sizeof(sentence) - 1] = '\0';
-    for (size_t i = 0; i < sizeof(sentence) - 1; ++i) {
-        if (sentence[i] < 'A' || sentence[i] > 'Z') {
-            return;
+
+    const char type[] = {frame[3], frame[4], frame[5], '\0'};
+    if (strcmp(type, "RMC") == 0) {
+        /* Decoder expects the body without $, CR or LF. */
+        frame[length - 2] = '\0';
+        gps_rmc_data_t data = {0};
+        if (GPS_PARSER_RMC_processMsg(frame + 1, &data) == ERROR_OK && parser->callback) {
+            parser->callback(&data, parser->user);
         }
-    }
-
-    if (strcmp(sentence + 2, "RMC") != 0) {
-        return;
-    }
-
-    /* Decoder expects the body without $, CR or LF. */
-    frame[length - 2] = '\0';
-    gps_rmc_data_t data = {0};
-    if (GPS_PARSER_RMC_processMsg(frame + 1, &data) == ERROR_OK && parser->callback) {
-        parser->callback(&data, parser->user);
     }
 }
 
@@ -100,12 +89,10 @@ static void _processByte(gps_parser_t *parser, char byte) {
         } else if (parser->length == GPS_PARSER_FRAME_MAX) {
             parser->length = 0;
             parser->state = GPS_PARSER_FI;
-            break;
         } else {
             parser->frame[parser->length] = byte;
             if (byte == '\n' && parser->frame[parser->length - 1] == '\r') {
                 parser->length++;
-                parser->frame[parser->length] = '\0';
                 _dispatch(parser);
                 parser->length = 0;
                 parser->state = GPS_PARSER_FI;
@@ -122,7 +109,6 @@ void GPS_PARSER_init(gps_parser_t *parser, gps_parser_callback_t callback, void 
     if (!parser) {
         return;
     }
-    ring_buffer_init(&parser->ring, parser->storage, sizeof(parser->storage));
     parser->length = 0;
     parser->state = GPS_PARSER_IDLE;
     parser->callback = callback;
@@ -130,17 +116,8 @@ void GPS_PARSER_init(gps_parser_t *parser, gps_parser_callback_t callback, void 
 }
 
 void GPS_PARSER_rxReady(gps_parser_t *parser) {
-    if (!parser) {
-        return;
-    }
-    switch (parser->state) {
-    case GPS_PARSER_IDLE:
+    if (parser && parser->state == GPS_PARSER_IDLE) {
         parser->state = GPS_PARSER_FI;
-        break;
-
-    case GPS_PARSER_FI:
-    case GPS_PARSER_FE:
-        break;
     }
 }
 
@@ -148,15 +125,8 @@ void GPS_PARSER_consume(gps_parser_t *parser, const char *bytes, size_t length) 
     if (!parser || !bytes || parser->state == GPS_PARSER_IDLE) {
         return;
     }
-    while (length) {
-        size_t count = length < GPS_PARSER_RING_SIZE - 1 ? length : GPS_PARSER_RING_SIZE - 1;
-        ring_buffer_queue_arr(&parser->ring, bytes, count);
-        char byte;
-        while (ring_buffer_dequeue(&parser->ring, &byte)) {
-            _processByte(parser, byte);
-        }
-        bytes += count;
-        length -= count;
+    for (size_t i = 0; i < length; ++i) {
+        _processByte(parser, bytes[i]);
     }
 }
 
