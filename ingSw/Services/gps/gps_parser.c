@@ -7,6 +7,12 @@
 
 /* === Internal function declarations ====================================================== */
 
+static int _hex(char byte);
+static bool _isCapitalLetter(char byte);
+static bool _hasValidChecksum(const char *frame, size_t length);
+static void _dispatch(gps_parser_t *parser);
+static void _processByte(gps_parser_t *parser, char byte);
+
 /* === Internal variable definitions ======================================================= */
 
 /* === Internal function definitions ======================================================= */
@@ -21,6 +27,10 @@ static int _hex(char byte) {
         return byte - 'a' + 10;
     }
     return -1;
+}
+
+static bool _isCapitalLetter(char byte) {
+    return byte >= 'A' && byte <= 'Z';
 }
 
 static bool _hasValidChecksum(const char *frame, size_t length) {
@@ -54,6 +64,9 @@ static void _dispatch(gps_parser_t *parser) {
 
     /* Accept any two-letter talker; only RMC is supported. */
     if (frame[1] < 'A' || frame[1] > 'Z' || frame[2] < 'A' || frame[2] > 'Z' || frame[6] != ',') {
+        return;
+    }
+    if (!_isCapitalLetter(frame[1]) || !_isCapitalLetter(frame[2]) || frame[6] != ',') {
         return;
     }
 

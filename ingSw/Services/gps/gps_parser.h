@@ -33,13 +33,9 @@ typedef struct {
 } gps_parser_t;
 
 /* === External function declarations ====================================================== */
-/** Initialize in FI, ready to find the next sentence start. */
+
 void GPS_PARSER_init(gps_parser_t *parser, gps_parser_callback_t callback);
-/** Process a borrowed UART chunk directly, synchronously and in order.
- * Partial frames persist across calls; the caller owns reception buffering.
- * NULL context/input or an empty batch is a no-op.
- * Input must not alias the parser context.
- */
+
 void GPS_PARSER_consume(gps_parser_t *parser, const char *bytes, size_t length);
 
 /* === End of documentation ================================================================ */
