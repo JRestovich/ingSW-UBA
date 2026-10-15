@@ -63,7 +63,7 @@ static void _dispatch(gps_parser_t *parser) {
         frame[length - 2] = '\0';
         gps_rmc_data_t data = {0};
         if (GPS_PARSER_RMC_processMsg(frame + 1, &data) == ERROR_OK && parser->callback) {
-            parser->callback(&data, parser->user);
+            parser->callback(&data);
         }
     }
 }
@@ -105,14 +105,13 @@ static void _processByte(gps_parser_t *parser, char byte) {
 }
 
 /* === External function definitions ======================================================= */
-void GPS_PARSER_init(gps_parser_t *parser, gps_parser_callback_t callback, void *user) {
+void GPS_PARSER_init(gps_parser_t *parser, gps_parser_callback_t callback) {
     if (!parser) {
         return;
     }
     parser->length = 0;
     parser->state = GPS_PARSER_IDLE;
     parser->callback = callback;
-    parser->user = user;
 }
 
 void GPS_PARSER_rxReady(gps_parser_t *parser) {

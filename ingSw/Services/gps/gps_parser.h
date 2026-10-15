@@ -20,7 +20,7 @@ typedef enum {
     GPS_PARSER_FE
 } gps_parser_state_t;
 
-typedef void (*gps_parser_callback_t)(const gps_rmc_data_t *data, void *user);
+typedef void (*gps_parser_callback_t)(const gps_rmc_data_t *data);
 
 /** Caller-owned context. Treat fields as private; do not copy after init.
  * Serialize operations; no ISR concurrency or callback reentry on this context.
@@ -31,11 +31,10 @@ typedef struct {
     size_t length;
     gps_parser_state_t state;
     gps_parser_callback_t callback;
-    void *user;
 } gps_parser_t;
 
 /* === External function declarations ====================================================== */
-void GPS_PARSER_init(gps_parser_t *parser, gps_parser_callback_t callback, void *user);
+void GPS_PARSER_init(gps_parser_t *parser, gps_parser_callback_t callback);
 /** Enable reception once; subsequent calls preserve capture. */
 void GPS_PARSER_rxReady(gps_parser_t *parser);
 /** Process a borrowed UART chunk directly, synchronously and in order.
