@@ -83,29 +83,29 @@ static void _dispatch(gps_parser_t *parser) {
 
 static void _processByte(gps_parser_t *parser, char byte) {
     switch (parser->state) {
-    case GPS_PARSER_FI:
+    case GPS_PARSER_FIND_START:
         if (byte == '$') {
-            parser->state = GPS_PARSER_FE;
+            parser->state = GPS_PARSER_FIND_END;
             parser->length = 1;
             parser->frame[0] = byte;
         }
         break;
 
-    case GPS_PARSER_FE:
+    case GPS_PARSER_FIND_END:
         /* START takes priority even when 82 bytes are already captured. */
         if (byte == '$') {
             parser->length = 1;
             parser->frame[0] = byte;
         } else if (parser->length == GPS_PARSER_FRAME_MAX) {
             parser->length = 0;
-            parser->state = GPS_PARSER_FI;
+            parser->state = GPS_PARSER_FIND_START;
         } else {
             parser->frame[parser->length] = byte;
             if (byte == '\n' && parser->frame[parser->length - 1] == '\r') {
                 parser->length++;
                 _dispatch(parser);
                 parser->length = 0;
-                parser->state = GPS_PARSER_FI;
+                parser->state = GPS_PARSER_FIND_START;
             } else {
                 parser->length++;
             }
@@ -120,7 +120,7 @@ void GPS_PARSER_init(gps_parser_t *parser, gps_parser_callback_t callback) {
         return;
     }
     parser->length = 0;
-    parser->state = GPS_PARSER_FI;
+    parser->state = GPS_PARSER_FIND_START;
     parser->callback = callback;
 }
 

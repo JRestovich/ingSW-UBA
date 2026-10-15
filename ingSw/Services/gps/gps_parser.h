@@ -15,8 +15,8 @@ extern "C" {
 
 /* === Data type declarations ============================================================== */
 typedef enum {
-    GPS_PARSER_FI,
-    GPS_PARSER_FE
+    GPS_PARSER_FIND_START,
+    GPS_PARSER_FIND_END
 } gps_parser_state_t;
 
 typedef void (*gps_parser_callback_t)(const gps_rmc_data_t *data);
