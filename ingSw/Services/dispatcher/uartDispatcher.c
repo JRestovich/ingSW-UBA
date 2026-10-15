@@ -44,6 +44,9 @@ static void _initSubscribers(uart_dispatcher_t *uartDispatcher);
 
 /* === Internal variable definitions ======================================================= */
 
+static const uart_config_t uartConfig = {
+    .baudrate = BAUDRATE_115200, .stop_bits = ONE_STOP_BIT, .parity = NONE};
+
 static uart_dispatcher_t uartDispatchers[UART_COUNT] = {0};
 
 /* === External variable definitions ======================================================= */
@@ -59,7 +62,7 @@ static bool _open(uart_dispatcher_t *uartDispatcher, uart_num uartNum) {
     }
 
     uartDispatcher->id = uartNum;
-    uartDispatcher->uartComm = UARTCOMM_get(uartNum);
+    uartDispatcher->uartComm = UARTCOMM_get(uartNum, &uartConfig);
     if (uartDispatcher->uartComm == NULL) {
         return false;
     }

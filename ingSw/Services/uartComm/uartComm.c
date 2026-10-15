@@ -17,6 +17,7 @@
 struct uart_driver {
     bool ready;
     uart_num id;
+    uart_config_t config;
     uart_t *uartInterface;
 
     TaskHandle_t task_tx;
@@ -36,7 +37,7 @@ struct uart_driver {
 
 /* === Internal function declarations ====================================================== */
 
-static bool _open(uart_driver_t *uartDriver, uart_num uartNum);
+static bool _open(uart_driver_t *uartDriver, uart_num uartNum, const uart_config_t *config);
 static void UART_rxCompleteCallback(uint16_t size, void *context);
 static void UART_txCompleteCallback(void *context);
 static void task_uart_rx(void *parameters);
@@ -50,13 +51,15 @@ static uart_driver_t uartDrivers[UART_COUNT] = {0};
 
 /* === Internal function definitions ======================================================= */
 
-static bool _open(uart_driver_t *uartDriver, uart_num uartNum) {
-    if (uartDriver == NULL || uartNum >= UART_COUNT) {
+static bool _open(uart_driver_t *uartDriver, uart_num uartNum, const uart_config_t *config) {
+    if (uartDriver == NULL || (unsigned)uartNum >= UART_COUNT || config == NULL) {
         return false;
     }
 
     if (uartDriver->ready) {
-        return true;
+        return uartDriver->config.baudrate == config->baudrate &&
+               uartDriver->config.stop_bits == config->stop_bits &&
+               uartDriver->config.parity == config->parity;
     }
 
     BaseType_t ret;
@@ -64,8 +67,8 @@ static bool _open(uart_driver_t *uartDriver, uart_num uartNum) {
     uartDriver->id = uartNum;
     uartDriver->uartInterface = UART_ctor(uartNum);
 
-    if (uartDriver->uartInterface == NULL ||
-        !UART_init(uartDriver->uartInterface, BAUDRATE_115200, ONE_STOP_BIT, NONE)) {
+    if (uartDriver->uartInterface == NULL || !UART_init(uartDriver->uartInterface, config->baudrate,
+                                                        config->stop_bits, config->parity)) {
         return false;
     }
 
@@ -116,6 +119,7 @@ static bool _open(uart_driver_t *uartDriver, uart_num uartNum) {
         return false;
     }
 
+    uartDriver->config = *config;
     uartDriver->ready = true;
 
     return true;
@@ -185,12 +189,12 @@ static void UART_txCompleteCallback(void *context) {
 
 /* === External function definitions ======================================================= */
 
-uart_driver_t *UARTCOMM_get(uart_num uartNum) {
-    if (uartNum >= UART_COUNT) {
+uart_driver_t *UARTCOMM_get(uart_num uartNum, const uart_config_t *config) {
+    if ((unsigned)uartNum >= UART_COUNT || config == NULL) {
         return NULL;
     }
 
-    if (!_open(&uartDrivers[uartNum], uartNum)) {
+    if (!_open(&uartDrivers[uartNum], uartNum, config)) {
         return NULL;
     }
     return &uartDrivers[uartNum];

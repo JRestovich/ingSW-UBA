@@ -17,7 +17,7 @@ typedef struct struct_uart_t
 
   uart_txCallback_t txCompleteCallback;
   void *txCompleteContext;
-  
+
   uart_rxCallback_t rxCompleteCallback;
   void *rxCompleteContext;
 
@@ -25,6 +25,15 @@ typedef struct struct_uart_t
 } uart_t;
 
 static uart_t uarts[UART_COUNT] = {
+    [UART_1] = {
+        .instance = USART1,
+        .gpio_rx = GPIOA,
+        .pin_rx = GPIO_PIN_10,
+        .gpio_tx = GPIOA,
+        .pin_tx = GPIO_PIN_9,
+        .alternate = GPIO_AF7_USART1,
+        .valid = true,
+    },
   [UART_2] = {
     .instance = USART2,
     .gpio_rx = GPIOA,

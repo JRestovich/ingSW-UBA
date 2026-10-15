@@ -35,6 +35,12 @@ extern "C" {
 typedef struct uart_driver uart_driver_t;
 
 typedef struct {
+    BAUDRATE_t baudrate;
+    STOP_BITS_t stop_bits;
+    PARITY_t parity;
+} uart_config_t;
+
+typedef struct {
     uint8_t data[UART_TX_MAX_PAYLOAD];
     uint16_t length;
 } uart_msg_t;
@@ -43,7 +49,8 @@ typedef struct {
 
 /* === External function declarations ====================================================== */
 
-uart_driver_t *UARTCOMM_get(uart_num uartNum);
+/** Reuses an open UART only when its configuration matches. Close before reconfiguring. */
+uart_driver_t *UARTCOMM_get(uart_num uartNum, const uart_config_t *config);
 
 void UARTCOMM_close(uart_driver_t *uartDriver);
 

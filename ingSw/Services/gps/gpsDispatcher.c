@@ -35,6 +35,9 @@ static void _initSubscribers(gps_dispatcher_t *gpsDispatcher);
 
 /* === Internal variable definitions ======================================================= */
 
+static const uart_config_t gpsUartConfig = {
+    .baudrate = BAUDRATE_9600, .stop_bits = ONE_STOP_BIT, .parity = NONE};
+
 static gps_dispatcher_t gpsDispatcherInstance = {0};
 
 /* === External variable definitions ======================================================= */
@@ -50,7 +53,7 @@ static bool _open(gps_dispatcher_t *gpsDispatcher, uart_num uartNum) {
     }
 
     gpsDispatcher->id = uartNum;
-    gpsDispatcher->uartComm = UARTCOMM_get(uartNum);
+    gpsDispatcher->uartComm = UARTCOMM_get(uartNum, &gpsUartConfig);
     if (gpsDispatcher->uartComm == NULL) {
         return false;
     }
