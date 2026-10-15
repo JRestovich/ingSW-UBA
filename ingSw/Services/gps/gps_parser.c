@@ -70,9 +70,6 @@ static void _dispatch(gps_parser_t *parser) {
 
 static void _processByte(gps_parser_t *parser, char byte) {
     switch (parser->state) {
-    case GPS_PARSER_IDLE:
-        break;
-
     case GPS_PARSER_FI:
         if (byte == '$') {
             parser->state = GPS_PARSER_FE;
@@ -110,18 +107,12 @@ void GPS_PARSER_init(gps_parser_t *parser, gps_parser_callback_t callback) {
         return;
     }
     parser->length = 0;
-    parser->state = GPS_PARSER_IDLE;
+    parser->state = GPS_PARSER_FI;
     parser->callback = callback;
 }
 
-void GPS_PARSER_rxReady(gps_parser_t *parser) {
-    if (parser && parser->state == GPS_PARSER_IDLE) {
-        parser->state = GPS_PARSER_FI;
-    }
-}
-
 void GPS_PARSER_consume(gps_parser_t *parser, const char *bytes, size_t length) {
-    if (!parser || !bytes || parser->state == GPS_PARSER_IDLE) {
+    if (!parser || !bytes) {
         return;
     }
     for (size_t i = 0; i < length; ++i) {

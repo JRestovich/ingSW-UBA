@@ -15,7 +15,6 @@ extern "C" {
 
 /* === Data type declarations ============================================================== */
 typedef enum {
-    GPS_PARSER_IDLE,
     GPS_PARSER_FI,
     GPS_PARSER_FE
 } gps_parser_state_t;
@@ -34,13 +33,12 @@ typedef struct {
 } gps_parser_t;
 
 /* === External function declarations ====================================================== */
+/** Initialize in FI, ready to find the next sentence start. */
 void GPS_PARSER_init(gps_parser_t *parser, gps_parser_callback_t callback);
-/** Enable reception once; subsequent calls preserve capture. */
-void GPS_PARSER_rxReady(gps_parser_t *parser);
 /** Process a borrowed UART chunk directly, synchronously and in order.
  * Partial frames persist across calls; the caller owns reception buffering.
- * Bytes before RX_READY are discarded. NULL context/input or an empty batch
- * is a no-op. Input must not alias the parser context.
+ * NULL context/input or an empty batch is a no-op.
+ * Input must not alias the parser context.
  */
 void GPS_PARSER_consume(gps_parser_t *parser, const char *bytes, size_t length);
 
