@@ -127,6 +127,12 @@
   # Enable to inject name of a test as a unique compilation symbol into its respective executable build.
   :use_test_definition: FALSE
 
+:flags:
+  :test:
+    :link:
+      '/test_gps_parser\.c$/':
+        - -Wl,--wrap=GPS_PARSER_RMC_processMsg
+
 # Configure additional command line flags provided to tools used in each build step
 # :flags:
 #   :release:
